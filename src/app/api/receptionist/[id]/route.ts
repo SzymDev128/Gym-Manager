@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-// GET /api/members/[id]
+// GET /api/receptionist/[id]
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -12,31 +12,27 @@ export async function GET(
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
-
-    const member = await prisma.member.findUnique({
+    const receptionist = await prisma.receptionist.findUnique({
       where: { id },
-      include: {
-        phoneNumbers: true,
-        membership: true,
-        payments: true,
-        checkIns: true,
-      },
+      include: { employee: true },
     });
-
-    if (!member)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-    return NextResponse.json(member);
+    if (!receptionist) {
+      return NextResponse.json(
+        { error: "Receptionist not found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(receptionist);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to fetch member", details: message },
+      { error: "Failed to fetch receptionist", details: message },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/members/[id]
+// PATCH /api/receptionist/[id]
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -49,32 +45,40 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { firstName, lastName, email, birthDate, membershipId } = body || {};
+    const { firstName, lastName, hireDate, salary, shiftHours } = body || {};
 
-    const updated = await prisma.member.update({
+    // Update through Employee (which includes Receptionist data)
+    const updated = await prisma.employee.update({
       where: { id },
       data: {
+        // Update Employee fields
         firstName,
         lastName,
-        email,
-        birthDate: birthDate ? new Date(birthDate) : undefined,
-        membershipId:
-          membershipId !== undefined ? Number(membershipId) : undefined,
+        hireDate: hireDate ? new Date(hireDate) : undefined,
+        salary: salary !== undefined ? Number(salary) : undefined,
+        // Update nested Receptionist fields
+        receptionist: {
+          update: {
+            shiftHours,
+          },
+        },
       },
-      include: { phoneNumbers: true, membership: true },
+      include: {
+        receptionist: true,
+      },
     });
 
     return NextResponse.json(updated);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to update member", details: message },
+      { error: "Failed to update receptionist", details: message },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/members/[id]
+// DELETE /api/receptionist/[id]
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -86,12 +90,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    await prisma.member.delete({ where: { id } });
+    // Delete Employee (cascade will delete Receptionist)
+    await prisma.employee.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to delete member", details: message },
+      { error: "Failed to delete receptionist", details: message },
       { status: 500 }
     );
   }

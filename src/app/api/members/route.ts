@@ -10,7 +10,6 @@ export async function GET() {
         membership: true,
       },
       orderBy: { id: "desc" },
-      take: 100,
     });
     return NextResponse.json(members);
   } catch (e: unknown) {
@@ -39,6 +38,17 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
+      );
+    }
+
+    const existingEmail = await prisma.member.findUnique({
+      where: { email },
+    });
+
+    if (existingEmail) {
+      return NextResponse.json(
+        { error: "Email already exists" },
+        { status: 409 }
       );
     }
 
