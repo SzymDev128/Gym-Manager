@@ -25,19 +25,21 @@ model User {
   roleId       Int      @default(1)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  member       Member?
+  memberships  UserMembership[]
+  checkIns     CheckIn[]
   employee     Employee?
 }
 
-model Member {
+model UserMembership {
   id           Int        @id @default(autoincrement())
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       Int        @unique
-  joinDate     DateTime   @default(now())
+  userId       Int
   membership   Membership @relation(fields: [membershipId], references: [id], onDelete: NoAction)
   membershipId Int
   payments     Payment[]
-  checkIns     CheckIn[]
+  startDate    DateTime   @default(now())
+  endDate      DateTime?
+  active       Boolean    @default(true)
 }
 
 model PhoneNumber {
@@ -52,7 +54,7 @@ model Membership {
   name        String
   durationMonths Int
   price       Float
-  members     Member[]
+  userMemberships UserMembership[]
 }
 
 model Employee {
@@ -113,8 +115,8 @@ model Maintenance {
 
 model Payment {
   id        Int     @id @default(autoincrement())
-  memberId  Int
-  member    Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  userMembershipId  Int
+  userMembership    UserMembership  @relation(fields: [userMembershipId], references: [id], onDelete: Cascade)
   date      DateTime @default(now())
   amount    Float
   method    String
@@ -122,7 +124,7 @@ model Payment {
 
 model CheckIn {
   id         Int     @id @default(autoincrement())
-  memberId   Int
-  member     Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  userId   Int
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   checkInTime DateTime @default(now())
 }
