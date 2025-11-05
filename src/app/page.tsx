@@ -13,7 +13,7 @@ import NextLink from "next/link";
 const DASHBOARD_CARDS = [
   {
     title: "Użytkownicy",
-    href: "/members",
+    href: "/users",
     icon: "👥",
     description: "Zarządzaj członkami siłowni",
     color: "brand.600",

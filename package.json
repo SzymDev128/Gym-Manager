@@ -15,6 +15,7 @@
     "@chakra-ui/react": "^3.28.0",
     "@emotion/react": "^11.14.0",
     "@prisma/client": "^6.17.1",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "next": "15.5.6",

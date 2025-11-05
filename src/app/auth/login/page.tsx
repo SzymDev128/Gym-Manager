@@ -12,7 +12,7 @@ import {
   Stack,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -21,8 +21,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { login, isLoggedIn } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.push("/");
+    }
+  }, [isLoggedIn, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
