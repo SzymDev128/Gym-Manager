@@ -16,6 +16,11 @@ export async function GET(
     const employee = await prisma.employee.findUnique({
       where: { id },
       include: {
+        user: {
+          include: {
+            phoneNumbers: true,
+          },
+        },
         trainer: {
           include: {
             classes: true,
@@ -40,7 +45,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/employees/[id] - update employee and optionally trainer/receptionist data
+// PATCH /api/employees/[id] - update employee data (salary, hireDate) and optionally trainer/receptionist roles
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -54,8 +59,6 @@ export async function PATCH(
 
     const body = await req.json();
     const {
-      firstName,
-      lastName,
       hireDate,
       salary,
       // Trainer fields (optional)
@@ -68,8 +71,6 @@ export async function PATCH(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
-      firstName,
-      lastName,
       hireDate: hireDate ? new Date(hireDate) : undefined,
       salary: salary !== undefined ? Number(salary) : undefined,
     };
@@ -157,6 +158,11 @@ export async function PATCH(
       where: { id },
       data: updateData,
       include: {
+        user: {
+          include: {
+            phoneNumbers: true,
+          },
+        },
         trainer: {
           include: {
             classes: true,
@@ -178,7 +184,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/employees/[id]
+// DELETE /api/employees/[id] - terminate employment (user remains, employee record deleted)
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -190,8 +196,33 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
+    // Load employee to get userId before deleting
+    const employee = await prisma.employee.findUnique({ where: { id } });
+    if (!employee) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     await prisma.employee.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+
+    // After termination, adjust user role:
+    // - If user had TRAINER/RECEPTIONIST role, demote to MEMBER if they have an active membership; otherwise to USER.
+    const [user, hasActiveMembership, memberRole, userRole] = await Promise.all([
+      prisma.user.findUnique({ where: { id: employee.userId }, include: { role: true } }),
+      prisma.userMembership.findFirst({ where: { userId: employee.userId, active: true } }),
+      prisma.role.findUnique({ where: { name: "MEMBER" } }),
+      prisma.role.findUnique({ where: { name: "USER" } }),
+    ]);
+
+    if (
+      user &&
+      (user.role?.name === "TRAINER" || user.role?.name === "RECEPTIONIST") &&
+      (memberRole && userRole)
+    ) {
+      const newRoleId = hasActiveMembership ? memberRole.id : userRole.id;
+      await prisma.user.update({ where: { id: user.id }, data: { roleId: newRoleId } });
+    }
+
+    return NextResponse.json({ message: "Employment terminated and role adjusted if necessary" });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(

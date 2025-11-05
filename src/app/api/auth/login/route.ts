@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
       where: { email },
       include: {
         phoneNumbers: true,
-        member: true,
+        memberships: {
+          include: { membership: true },
+          orderBy: { startDate: "desc" },
+        },
         employee: {
           include: {
             trainer: true,

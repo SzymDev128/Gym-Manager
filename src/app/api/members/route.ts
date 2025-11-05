@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-// GET /api/members - list members
+function addMonths(date: Date, months: number): Date {
+  const d = new Date(date.getTime());
+  const targetMonth = d.getMonth() + months;
+  d.setMonth(targetMonth);
+  return d;
+}
+
+// GET /api/members - list members with memberships
 export async function GET() {
   try {
-    const members = await prisma.member.findMany({
+    const members = await prisma.userMembership.findMany({
       include: {
-        phoneNumbers: true,
+        user: {
+          include: {
+            phoneNumbers: true,
+            checkIns: { orderBy: { checkInTime: "desc" }, take: 5 },
+          },
+        },
         membership: true,
+        payments: true,
       },
-      orderBy: { id: "desc" },
+      orderBy: { startDate: "desc" },
     });
     return NextResponse.json(members);
   } catch (e: unknown) {
@@ -21,52 +34,103 @@ export async function GET() {
   }
 }
 
-// POST /api/members - create member
+// POST /api/members - assign membership to user
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const {
-      firstName,
-      lastName,
-      email,
-      birthDate,
-      membershipId,
-      phoneNumbers,
-    } = data || {};
+    const { userId, membershipId, startDate } = data || {};
 
-    if (!firstName || !lastName || !email || !membershipId) {
+    if (!userId || !membershipId) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: userId, membershipId" },
         { status: 400 }
       );
     }
 
-    const existingEmail = await prisma.member.findUnique({
-      where: { email },
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: Number(userId) },
+      include: { role: true },
     });
 
-    if (existingEmail) {
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Prevent multiple active memberships at the same time
+    const existingActive = await prisma.userMembership.findFirst({
+      where: { userId: Number(userId), active: true },
+    });
+
+    if (existingActive) {
       return NextResponse.json(
-        { error: "Email already exists" },
+        { error: "User already has an active membership" },
         { status: 409 }
       );
     }
 
-    const created = await prisma.member.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        membershipId: Number(membershipId),
-        birthDate: birthDate ? new Date(birthDate) : null,
-        phoneNumbers: phoneNumbers?.length
-          ? {
-              create: phoneNumbers.map((n: string) => ({ number: n })),
-            }
-          : undefined,
-      },
-      include: { phoneNumbers: true, membership: true },
+    // Check if membership plan exists
+    const membership = await prisma.membership.findUnique({
+      where: { id: Number(membershipId) },
     });
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Membership plan not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get roles
+    const [memberRole, userRole] = await Promise.all([
+      prisma.role.findUnique({ where: { name: "MEMBER" } }),
+      prisma.role.findUnique({ where: { name: "USER" } }),
+    ]);
+
+    if (!memberRole || !userRole) {
+      return NextResponse.json(
+        { error: "System configuration error: required roles not found" },
+        { status: 500 }
+      );
+    }
+
+    const start = startDate ? new Date(startDate) : new Date();
+    const end = addMonths(start, membership.durationMonths);
+
+    // Create user membership
+    const created = await prisma.userMembership.create({
+      data: {
+        userId: Number(userId),
+        membershipId: Number(membershipId),
+        startDate: start,
+        endDate: end,
+        active: true,
+      },
+      include: {
+        user: {
+          include: {
+            phoneNumbers: true,
+            checkIns: { orderBy: { checkInTime: "desc" }, take: 5 },
+          },
+        },
+        membership: true,
+        payments: true,
+      },
+    });
+
+    // Promote USER -> MEMBER only if user wasn't employee already
+    // If user already has an employee record, keep their employee role
+    const employee = await prisma.employee.findUnique({
+      where: { userId: Number(userId) },
+      select: { id: true, trainer: true, receptionist: true },
+    });
+
+    if (!employee && user.role?.name === "USER") {
+      await prisma.user.update({
+        where: { id: Number(userId) },
+        data: { roleId: memberRole.id },
+      });
+    }
 
     return NextResponse.json(created, { status: 201 });
   } catch (e: unknown) {

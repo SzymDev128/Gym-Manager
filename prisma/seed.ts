@@ -48,6 +48,32 @@ async function main() {
   console.log(`  Password: admin123`);
   console.log(`  Role: ADMIN`);
 
+  console.log("\nSeeding membership plans...");
+
+  const plans: Array<{ name: string; durationMonths: number; price: number }> =
+    [
+      { name: "Classic", durationMonths: 1, price: 129 },
+      { name: "GymBasic", durationMonths: 3, price: 349 },
+      { name: "ProGym", durationMonths: 12, price: 1399 },
+    ];
+
+  for (const plan of plans) {
+    const exists = await prisma.membership.findFirst({
+      where: {
+        name: plan.name,
+        durationMonths: plan.durationMonths,
+      },
+    });
+    if (!exists) {
+      await prisma.membership.create({ data: plan });
+      console.log(
+        `✓ Created plan: ${plan.name} (${plan.durationMonths}m) - ${plan.price}`
+      );
+    } else {
+      console.log(`• Plan exists: ${plan.name} (${plan.durationMonths}m)`);
+    }
+  }
+
   console.log("\nSeeding completed!");
 }
 

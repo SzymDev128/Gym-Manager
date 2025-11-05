@@ -20,6 +20,11 @@ export async function GET(req: Request) {
     const employees = await prisma.employee.findMany({
       where: Object.keys(where).length > 0 ? where : undefined,
       include: {
+        user: {
+          include: {
+            phoneNumbers: true,
+          },
+        },
         trainer: {
           include: {
             classes: true,
@@ -29,7 +34,7 @@ export async function GET(req: Request) {
         },
         receptionist: true,
       },
-      orderBy: { id: "desc" },
+      orderBy: { hireDate: "desc" },
     });
     return NextResponse.json(employees);
   } catch (e: unknown) {
@@ -41,13 +46,12 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/employees - create employee (with optional trainer/receptionist role)
+// POST /api/employees - hire user as employee (with optional trainer/receptionist role)
 export async function POST(req: Request) {
   try {
     const data = await req.json();
     const {
-      firstName,
-      lastName,
+      userId,
       hireDate,
       salary,
       // Trainer fields (optional)
@@ -58,21 +62,40 @@ export async function POST(req: Request) {
       shiftHours,
     } = data || {};
 
-    if (!firstName || !lastName || !hireDate || salary === undefined) {
+    if (!userId || !hireDate || salary === undefined) {
       return NextResponse.json(
         {
-          error:
-            "Missing required fields: firstName, lastName, hireDate, salary",
+          error: "Missing required fields: userId, hireDate, salary",
         },
         { status: 400 }
+      );
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: Number(userId) },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user already is an employee
+    const existingEmployee = await prisma.employee.findUnique({
+      where: { userId: Number(userId) },
+    });
+
+    if (existingEmployee) {
+      return NextResponse.json(
+        { error: "User is already an employee" },
+        { status: 409 }
       );
     }
 
     // Build nested create data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const createData: any = {
-      firstName,
-      lastName,
+      userId: Number(userId),
       hireDate: new Date(hireDate),
       salary: Number(salary),
     };
@@ -119,9 +142,34 @@ export async function POST(req: Request) {
       };
     }
 
+    // Determine user role based on employee type
+    let userRoleName = "USER"; // Default
+    if (specialization) {
+      userRoleName = "TRAINER";
+    } else if (shiftHours) {
+      userRoleName = "RECEPTIONIST";
+    }
+
+    // Get the role
+    const userRole = await prisma.role.findUnique({
+      where: { name: userRoleName },
+    });
+
+    if (!userRole) {
+      return NextResponse.json(
+        { error: `System configuration error: ${userRoleName} role not found` },
+        { status: 500 }
+      );
+    }
+
     const created = await prisma.employee.create({
       data: createData,
       include: {
+        user: {
+          include: {
+            phoneNumbers: true,
+          },
+        },
         trainer: {
           include: {
             classes: true,
@@ -131,6 +179,12 @@ export async function POST(req: Request) {
         },
         receptionist: true,
       },
+    });
+
+    // Update user role
+    await prisma.user.update({
+      where: { id: Number(userId) },
+      data: { roleId: userRole.id },
     });
 
     return NextResponse.json(created, { status: 201 });
