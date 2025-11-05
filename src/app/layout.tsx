@@ -1,4 +1,5 @@
 import { Providers } from "./providers";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export default async function RootLayout({
   children,
@@ -8,7 +9,9 @@ export default async function RootLayout({
   return (
     <html lang="pl">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <AuthGuard>{children}</AuthGuard>
+        </Providers>
       </body>
     </html>
   );

@@ -7,24 +7,44 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Member {
-  id           Int        @id @default(autoincrement())
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // USER, MEMBER, RECEPTIONIST, TRAINER, ADMIN
+  users       User[]
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String   
   firstName    String
   lastName     String
   birthDate    DateTime?
-  email        String     @unique
   phoneNumbers PhoneNumber[]
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: NoAction)
+  roleId       Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  member       Member?
+  employee     Employee?
+}
+
+model Member {
+  id           Int        @id @default(autoincrement())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int        @unique
   joinDate     DateTime   @default(now())
   membership   Membership @relation(fields: [membershipId], references: [id], onDelete: NoAction)
   membershipId Int
   payments     Payment[]
   checkIns     CheckIn[]
 }
+
 model PhoneNumber {
   id       Int    @id @default(autoincrement())
   number   String
-  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  memberId Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int
 }
 
 model Membership {
@@ -37,8 +57,8 @@ model Membership {
 
 model Employee {
   id        Int      @id @default(autoincrement())
-  firstName String
-  lastName  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int      @unique
   hireDate  DateTime
   salary    Float
   trainer   Trainer?
