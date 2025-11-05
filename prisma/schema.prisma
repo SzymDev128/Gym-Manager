@@ -54,6 +54,7 @@ model Membership {
   name        String
   durationMonths Int
   price       Float
+  description String    @default("")
   userMemberships UserMembership[]
 }
 

@@ -16,7 +16,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = [
-  { name: "Użytkownicy", href: "/members", icon: "👥" },
+  { name: "Użytkownicy", href: "/users", icon: "👥" },
   { name: "Pracownicy", href: "/employees", icon: "💼" },
   { name: "Sprzęt", href: "/equipment", icon: "🏋️" },
   { name: "Sale", href: "/classes", icon: "📅" },

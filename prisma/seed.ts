@@ -50,12 +50,47 @@ async function main() {
 
   console.log("\nSeeding membership plans...");
 
-  const plans: Array<{ name: string; durationMonths: number; price: number }> =
-    [
-      { name: "Classic", durationMonths: 1, price: 129 },
-      { name: "GymBasic", durationMonths: 3, price: 349 },
-      { name: "ProGym", durationMonths: 12, price: 1399 },
-    ];
+  const plans: Array<{
+    name: string;
+    durationMonths: number;
+    price: number;
+    description: string;
+  }> = [
+    {
+      name: "Classic",
+      durationMonths: 1,
+      price: 109,
+      description:
+        "Dostęp do siłowni, szatnia i prysznice, konsultacja trenera",
+    },
+    {
+      name: "GymBasic",
+      durationMonths: 3,
+      price: 349,
+      description:
+        "Dostęp do siłowni, szatnia i prysznice, konsultacja trenera, rabat 17%",
+    },
+    {
+      name: "GymPro",
+      durationMonths: 12,
+      price: 1399,
+      description:
+        "Wszystko z Classic + zajęcia grupowe, sauna i strefa relaksu, plan treningowy",
+    },
+    {
+      name: "Premium",
+      durationMonths: 12,
+      price: 1499,
+      description:
+        "Wszystko z Classic + zajęcia grupowe, sauna i strefa relaksu, plan treningowy, rabat 27%",
+    },
+    {
+      name: "Student",
+      durationMonths: 1,
+      price: 79,
+      description: "Dostęp do siłowni, szatnia i prysznice, wymaga legitymacji",
+    },
+  ];
 
   for (const plan of plans) {
     const exists = await prisma.membership.findFirst({
