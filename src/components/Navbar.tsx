@@ -31,6 +31,12 @@ const NAV_ITEMS = [
     icon: "💳",
     allowedRoles: [1, 2, 3, 4, 5],
   },
+  {
+    name: "Statystyki",
+    href: "/project",
+    icon: "📊",
+    allowedRoles: [3, 4, 5],
+  }, // RECEPTIONIST, TRAINER, ADMIN
 ];
 
 export function Navbar() {
