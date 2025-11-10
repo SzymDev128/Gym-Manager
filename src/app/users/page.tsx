@@ -10,6 +10,8 @@ import {
   Spinner,
   Badge,
   Button,
+  Input,
+  HStack,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import {
@@ -46,14 +48,33 @@ const ROLE_NAMES: Record<number, string> = {
 const columnHelper = createColumnHelper<User>();
 
 export default function UsersPage() {
-  const {
-    data: users,
-    error,
-    isLoading,
-    mutate,
-  } = useSWR<User[]>("/api/users");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // Build API URL with query parameters
+  const params = new URLSearchParams();
+  if (searchQuery.trim()) params.set("search", searchQuery.trim());
+  if (roleFilter !== "all") params.set("role", roleFilter);
+  params.set("sortBy", sortBy);
+  params.set("sortOrder", sortOrder);
+  const apiUrl = `/api/users?${params.toString()}`;
+
+  const { data: users, error, isLoading, mutate } = useSWR<User[]>(apiUrl);
+
+  const handleSortChange = (columnId: string) => {
+    if (sortBy === columnId) {
+      // Toggle order for the same column
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // New column, default to ascending
+      setSortBy(columnId);
+      setSortOrder("asc");
+    }
+  };
 
   const handleEditClick = (user: User) => {
     setSelectedUser(user);
@@ -129,17 +150,21 @@ export default function UsersPage() {
     columnHelper.accessor("id", {
       header: "ID",
       cell: (info) => info.getValue(),
+      enableSorting: true,
     }),
     columnHelper.accessor((row) => `${row.firstName} ${row.lastName}`, {
       id: "fullName",
       header: "Imię i nazwisko",
       cell: (info) => info.getValue(),
+      enableSorting: true,
     }),
     columnHelper.accessor("email", {
       header: "Email",
       cell: (info) => info.getValue(),
+      enableSorting: true,
     }),
     columnHelper.accessor("roleId", {
+      id: "roleId",
       header: "Rola",
       cell: (info) => {
         const roleName = ROLE_NAMES[info.getValue()] || "UNKNOWN";
@@ -155,15 +180,18 @@ export default function UsersPage() {
             : "gray";
         return <Badge colorPalette={colorPalette}>{roleName}</Badge>;
       },
+      enableSorting: true,
     }),
     columnHelper.accessor("phoneNumbers", {
       header: "Telefon",
       cell: (info) =>
         info.getValue()?.[0]?.number || <Text color="gray.500">Brak</Text>,
+      enableSorting: false,
     }),
     columnHelper.accessor("createdAt", {
       header: "Data rejestracji",
       cell: (info) => new Date(info.getValue()).toLocaleDateString("pl-PL"),
+      enableSorting: true,
     }),
     columnHelper.display({
       id: "actions",
@@ -229,6 +257,47 @@ export default function UsersPage() {
             Lista wszystkich użytkowników systemu
           </Text>
 
+          <HStack gap={4} mb={6} flexWrap="wrap">
+            <Box flex="1" minW="300px">
+              <Input
+                placeholder="Szukaj po imieniu, nazwisku lub emailu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                bg="gray.800"
+                borderColor="gray.600"
+                color="white"
+                _placeholder={{ color: "gray.500" }}
+                _hover={{ borderColor: "gray.500" }}
+              />
+            </Box>
+            <Box>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                style={{
+                  backgroundColor: "#1A202C",
+                  color: "white",
+                  border: "1px solid #4A5568",
+                  borderRadius: "6px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="all">Wszystkie role</option>
+                <option value="USER">USER</option>
+                <option value="MEMBER">MEMBER</option>
+                <option value="RECEPTIONIST">RECEPTIONIST</option>
+                <option value="TRAINER">TRAINER</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </Box>
+            <Box>
+              <Text color="gray.300" fontSize="sm">
+                Znaleziono: {users?.length || 0} użytkowników
+              </Text>
+            </Box>
+          </HStack>
+
           {isLoading && (
             <Box textAlign="center" py={10}>
               <Spinner size="xl" color="red.500" />
@@ -261,22 +330,47 @@ export default function UsersPage() {
                 <Table.Header>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <Table.Row key={headerGroup.id} bg="black">
-                      {headerGroup.headers.map((header) => (
-                        <Table.ColumnHeader
-                          key={header.id}
-                          color="gray.200"
-                          fontWeight="bold"
-                          py={4}
-                          borderColor="gray.500"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
+                      {headerGroup.headers.map((header) => {
+                        const canSort = header.column.getCanSort();
+                        const sortField =
+                          header.column.id === "fullName"
+                            ? "firstName"
+                            : header.column.id;
+
+                        return (
+                          <Table.ColumnHeader
+                            key={header.id}
+                            color="gray.200"
+                            fontWeight="bold"
+                            py={4}
+                            borderColor="gray.500"
+                            cursor={canSort ? "pointer" : "default"}
+                            onClick={() =>
+                              canSort && handleSortChange(sortField)
+                            }
+                            _hover={canSort ? { bg: "gray.800" } : {}}
+                          >
+                            <Box display="flex" alignItems="center" gap={2}>
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                              {canSort && sortBy === sortField && (
+                                <Box as="span" fontSize="xs">
+                                  {sortOrder === "asc" ? " 🔼" : " 🔽"}
+                                </Box>
                               )}
-                        </Table.ColumnHeader>
-                      ))}
+                              {canSort && sortBy !== sortField && (
+                                <Box as="span" fontSize="xs" opacity={0.5}>
+                                  {" ⬍"}
+                                </Box>
+                              )}
+                            </Box>
+                          </Table.ColumnHeader>
+                        );
+                      })}
                     </Table.Row>
                   ))}
                 </Table.Header>

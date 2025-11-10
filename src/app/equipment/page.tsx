@@ -13,6 +13,8 @@ import {
   Spinner,
   Button,
   Badge,
+  Input,
+  HStack,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import {
@@ -35,9 +37,32 @@ interface Equipment {
 const columnHelper = createColumnHelper<Equipment>();
 
 export default function EquipmentPage() {
-  const { data, error, isLoading, mutate } =
-    useSWR<Equipment[]>("/api/equipment");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [conditionFilter, setConditionFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Build API URL with query parameters
+  const params = new URLSearchParams();
+  if (searchQuery.trim()) params.set("search", searchQuery.trim());
+  if (conditionFilter !== "all") params.set("condition", conditionFilter);
+  params.set("sortBy", sortBy);
+  params.set("sortOrder", sortOrder);
+  const apiUrl = `/api/equipment?${params.toString()}`;
+
+  const { data, error, isLoading, mutate } = useSWR<Equipment[]>(apiUrl);
+
+  const handleSortChange = (columnId: string) => {
+    if (sortBy === columnId) {
+      // Toggle order for the same column
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // New column, default to ascending
+      setSortBy(columnId);
+      setSortOrder("asc");
+    }
+  };
 
   const handleDelete = async (eq: Equipment) => {
     try {
@@ -63,17 +88,24 @@ export default function EquipmentPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columns: ColumnDef<Equipment, any>[] = [
-    columnHelper.accessor("id", { header: "ID", cell: (i) => i.getValue() }),
+    columnHelper.accessor("id", {
+      header: "ID",
+      cell: (i) => i.getValue(),
+      enableSorting: true,
+    }),
     columnHelper.accessor("name", {
       header: "Nazwa",
       cell: (i) => i.getValue(),
+      enableSorting: true,
     }),
     columnHelper.accessor("category", {
       header: "Kategoria",
       cell: (i) => i.getValue(),
+      enableSorting: true,
     }),
     columnHelper.accessor("condition", {
       header: "Stan",
+      enableSorting: true,
       cell: (i) => {
         const c = i.getValue();
         const palette =
@@ -101,10 +133,12 @@ export default function EquipmentPage() {
     columnHelper.accessor("purchaseDate", {
       header: "Data zakupu",
       cell: (i) => new Date(i.getValue()).toLocaleDateString("pl-PL"),
+      enableSorting: true,
     }),
     columnHelper.display({
       id: "actions",
       header: "Akcje",
+      enableSorting: false,
       cell: (info) => {
         const eq = info.row.original;
         return (
@@ -171,6 +205,46 @@ export default function EquipmentPage() {
             </Button>
           </Box>
 
+          <HStack gap={4} mb={6} flexWrap="wrap">
+            <Box flex="1" minW="300px">
+              <Input
+                placeholder="Szukaj po nazwie lub kategorii..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                bg="gray.800"
+                borderColor="gray.600"
+                color="white"
+                _placeholder={{ color: "gray.500" }}
+                _hover={{ borderColor: "gray.500" }}
+              />
+            </Box>
+            <Box>
+              <select
+                value={conditionFilter}
+                onChange={(e) => setConditionFilter(e.target.value)}
+                style={{
+                  backgroundColor: "#1A202C",
+                  color: "white",
+                  border: "1px solid #4A5568",
+                  borderRadius: "6px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="all">Wszystkie stany</option>
+                <option value="NEW">Nowy</option>
+                <option value="GOOD">Dobry</option>
+                <option value="NEEDS_REPAIR">Wymaga naprawy</option>
+                <option value="OUT_OF_ORDER">Uszkodzony</option>
+              </select>
+            </Box>
+            <Box>
+              <Text color="gray.300" fontSize="sm">
+                Znaleziono: {data?.length || 0} sprzętów
+              </Text>
+            </Box>
+          </HStack>
+
           {isLoading && (
             <Box textAlign="center" py={10}>
               <Spinner size="xl" color="red.500" />
@@ -203,22 +277,44 @@ export default function EquipmentPage() {
                 <Table.Header>
                   {table.getHeaderGroups().map((hg) => (
                     <Table.Row key={hg.id} bg="black">
-                      {hg.headers.map((h) => (
-                        <Table.ColumnHeader
-                          key={h.id}
-                          color="gray.200"
-                          fontWeight="bold"
-                          py={4}
-                          borderColor="gray.500"
-                        >
-                          {h.isPlaceholder
-                            ? null
-                            : flexRender(
-                                h.column.columnDef.header,
-                                h.getContext()
+                      {hg.headers.map((h) => {
+                        const canSort = h.column.getCanSort();
+                        const sortField = h.column.id;
+
+                        return (
+                          <Table.ColumnHeader
+                            key={h.id}
+                            color="gray.200"
+                            fontWeight="bold"
+                            py={4}
+                            borderColor="gray.500"
+                            cursor={canSort ? "pointer" : "default"}
+                            onClick={() =>
+                              canSort && handleSortChange(sortField)
+                            }
+                            _hover={canSort ? { bg: "gray.800" } : {}}
+                          >
+                            <Box display="flex" alignItems="center" gap={2}>
+                              {h.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    h.column.columnDef.header,
+                                    h.getContext()
+                                  )}
+                              {canSort && sortBy === sortField && (
+                                <Box as="span" fontSize="xs">
+                                  {sortOrder === "asc" ? " 🔼" : " 🔽"}
+                                </Box>
                               )}
-                        </Table.ColumnHeader>
-                      ))}
+                              {canSort && sortBy !== sortField && (
+                                <Box as="span" fontSize="xs" opacity={0.5}>
+                                  {" ⬍"}
+                                </Box>
+                              )}
+                            </Box>
+                          </Table.ColumnHeader>
+                        );
+                      })}
                     </Table.Row>
                   ))}
                 </Table.Header>

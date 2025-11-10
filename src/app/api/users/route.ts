@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-// GET /api/users - list users
+// GET /api/users - list users with filtering and sorting
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const roleName = searchParams.get("role");
+    const search = searchParams.get("search");
+    const sortBy = searchParams.get("sortBy") || "id";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    // Optional filter by role name using Role relation
-    let where: Record<string, unknown> | undefined = undefined;
-    if (roleName) {
+    // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
+
+    // Filter by role
+    if (roleName && roleName !== "all") {
       const role = await prisma.role.findUnique({ where: { name: roleName } });
       if (!role) {
         return NextResponse.json(
@@ -17,11 +23,52 @@ export async function GET(request: Request) {
           { status: 400 }
         );
       }
-      where = { roleId: role.id };
+      where.roleId = role.id;
+    }
+
+    // Filter by search query (firstName, lastName, email)
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      // If we already have roleId filter, combine with AND
+      if (where.roleId) {
+        where.AND = [
+          { roleId: where.roleId },
+          {
+            OR: [
+              { firstName: { contains: searchTerm } },
+              { lastName: { contains: searchTerm } },
+              { email: { contains: searchTerm } },
+            ],
+          },
+        ];
+        delete where.roleId;
+      } else {
+        where.OR = [
+          { firstName: { contains: searchTerm } },
+          { lastName: { contains: searchTerm } },
+          { email: { contains: searchTerm } },
+        ];
+      }
+    }
+
+    // Build orderBy clause
+    const orderBy: Record<string, string> = {};
+    const validSortFields = [
+      "id",
+      "firstName",
+      "lastName",
+      "email",
+      "roleId",
+      "createdAt",
+    ];
+    if (validSortFields.includes(sortBy)) {
+      orderBy[sortBy] = sortOrder === "asc" ? "asc" : "desc";
+    } else {
+      orderBy.id = "desc";
     }
 
     const users = await prisma.user.findMany({
-      where,
+      where: Object.keys(where).length > 0 ? where : undefined,
       include: {
         phoneNumbers: true,
         memberships: {
@@ -41,7 +88,7 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: { id: "desc" },
+      orderBy,
     });
 
     // Remove passwords from response

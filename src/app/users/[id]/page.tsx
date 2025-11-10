@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import UsersEditModal from "@/components/UsersEditModal";
 import { RoleGuard } from "@/components/RoleGuard";
@@ -15,6 +15,8 @@ import {
   Spinner,
   Card,
   Table,
+  Input,
+  HStack,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import useSWR from "swr";
@@ -68,6 +70,30 @@ export default function UserDetailPage() {
   );
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const filteredCheckIns = useMemo(() => {
+    if (!checkIns) return [];
+
+    let filtered = [...checkIns];
+
+    if (fromDate) {
+      const fromDateTime = new Date(fromDate).getTime();
+      filtered = filtered.filter(
+        (c) => new Date(c.checkInTime).getTime() >= fromDateTime
+      );
+    }
+
+    if (toDate) {
+      const toDateTime = new Date(toDate).setHours(23, 59, 59, 999);
+      filtered = filtered.filter(
+        (c) => new Date(c.checkInTime).getTime() <= toDateTime
+      );
+    }
+
+    return filtered;
+  }, [checkIns, fromDate, toDate]);
 
   const handleEditSave = async (updatedUser: {
     firstName?: string;
@@ -247,64 +273,130 @@ export default function UserDetailPage() {
                 Brak dostępnych danych o aktywności
               </Text>
             ) : (
-              <Box overflowX="auto">
-                <Table.Root variant="outline" size="sm">
-                  <Table.Header bg="gray.900">
-                    <Table.Row>
-                      <Table.ColumnHeader color="white" borderColor="gray.500">
-                        ID
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader color="white" borderColor="gray.500">
-                        Data wejścia
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader color="white" borderColor="gray.500">
-                        Godzina wejścia
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader color="white" borderColor="gray.500">
-                        Data wyjścia
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader color="white" borderColor="gray.500">
-                        Godzina wyjścia
-                      </Table.ColumnHeader>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {checkIns.map((checkIn, index) => {
-                      const checkInDate = new Date(checkIn.checkInTime);
-                      const checkOutDate = checkIn.checkOutTime
-                        ? new Date(checkIn.checkOutTime)
-                        : null;
+              <>
+                <HStack gap={4} mb={4} flexWrap="wrap">
+                  <Box>
+                    <Text color="gray.300" mb={1} fontSize="sm">
+                      Od daty:
+                    </Text>
+                    <Input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      bg="gray.900"
+                      borderColor="gray.600"
+                      color="white"
+                      _hover={{ borderColor: "gray.500" }}
+                    />
+                  </Box>
+                  <Box>
+                    <Text color="gray.300" mb={1} fontSize="sm">
+                      Do daty:
+                    </Text>
+                    <Input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      bg="gray.900"
+                      borderColor="gray.600"
+                      color="white"
+                      _hover={{ borderColor: "gray.500" }}
+                    />
+                  </Box>
+                  <Box alignSelf="flex-end">
+                    <Text color="gray.300" fontSize="sm">
+                      Znaleziono: {filteredCheckIns.length} rekordów
+                    </Text>
+                  </Box>
+                </HStack>
 
-                      return (
-                        <Table.Row
-                          key={checkIn.id}
-                          bg={index % 2 === 0 ? "gray.800" : "gray.700"}
+                <Box overflowX="auto">
+                  <Table.Root variant="outline" size="sm">
+                    <Table.Header bg="gray.900">
+                      <Table.Row>
+                        <Table.ColumnHeader
+                          color="white"
+                          borderColor="gray.500"
                         >
-                          <Table.Cell color="gray.100" borderColor="gray.500">
-                            {checkIn.id}
-                          </Table.Cell>
-                          <Table.Cell color="gray.100" borderColor="gray.500">
-                            {checkInDate.toLocaleDateString("pl-PL")}
-                          </Table.Cell>
-                          <Table.Cell color="gray.100" borderColor="gray.500">
-                            {checkInDate.toLocaleTimeString("pl-PL")}
-                          </Table.Cell>
-                          <Table.Cell color="gray.100" borderColor="gray.500">
-                            {checkOutDate
-                              ? checkOutDate.toLocaleDateString("pl-PL")
-                              : "-"}
-                          </Table.Cell>
-                          <Table.Cell color="gray.100" borderColor="gray.500">
-                            {checkOutDate
-                              ? checkOutDate.toLocaleTimeString("pl-PL")
-                              : "-"}
-                          </Table.Cell>
-                        </Table.Row>
-                      );
-                    })}
-                  </Table.Body>
-                </Table.Root>
-              </Box>
+                          ID
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          color="white"
+                          borderColor="gray.500"
+                        >
+                          Data wejścia
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          color="white"
+                          borderColor="gray.500"
+                        >
+                          Godzina wejścia
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          color="white"
+                          borderColor="gray.500"
+                        >
+                          Data wyjścia
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          color="white"
+                          borderColor="gray.500"
+                        >
+                          Godzina wyjścia
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          color="white"
+                          borderColor="gray.500"
+                        >
+                          Status
+                        </Table.ColumnHeader>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {filteredCheckIns.map((checkIn, index) => {
+                        const checkInDate = new Date(checkIn.checkInTime);
+                        const checkOutDate = checkIn.checkOutTime
+                          ? new Date(checkIn.checkOutTime)
+                          : null;
+
+                        return (
+                          <Table.Row
+                            key={checkIn.id}
+                            bg={index % 2 === 0 ? "gray.800" : "gray.700"}
+                          >
+                            <Table.Cell color="gray.100" borderColor="gray.500">
+                              {checkIn.id}
+                            </Table.Cell>
+                            <Table.Cell color="gray.100" borderColor="gray.500">
+                              {checkInDate.toLocaleDateString("pl-PL")}
+                            </Table.Cell>
+                            <Table.Cell color="gray.100" borderColor="gray.500">
+                              {checkInDate.toLocaleTimeString("pl-PL")}
+                            </Table.Cell>
+                            <Table.Cell color="gray.100" borderColor="gray.500">
+                              {checkOutDate
+                                ? checkOutDate.toLocaleDateString("pl-PL")
+                                : "-"}
+                            </Table.Cell>
+                            <Table.Cell color="gray.100" borderColor="gray.500">
+                              {checkOutDate
+                                ? checkOutDate.toLocaleTimeString("pl-PL")
+                                : "-"}
+                            </Table.Cell>
+                            <Table.Cell color="gray.100" borderColor="gray.500">
+                              {checkIn.checkOutTime ? (
+                                <Badge colorPalette="gray">Zakończone</Badge>
+                              ) : (
+                                <Badge colorPalette="green">Aktywne</Badge>
+                              )}
+                            </Table.Cell>
+                          </Table.Row>
+                        );
+                      })}
+                    </Table.Body>
+                  </Table.Root>
+                </Box>
+              </>
             )}
           </Card.Root>
 
