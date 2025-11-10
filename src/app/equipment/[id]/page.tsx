@@ -33,6 +33,7 @@ interface Equipment {
   category: string;
   condition: string;
   purchaseDate: string;
+  purchasePrice: number;
 }
 
 interface Maintenance {
@@ -74,6 +75,7 @@ export default function EquipmentDetailPage() {
     name?: string;
     category?: string;
     condition?: string;
+    purchasePrice?: number | string;
   }) => {
     try {
       const res = await axios.patch(`/api/equipment/${id}`, updatedEquipment);
@@ -356,6 +358,10 @@ export default function EquipmentDetailPage() {
                     )}
                   </Text>
                   <Text color="gray.200">
+                    <strong>Cena zakupu:</strong>{" "}
+                    {equipment.purchasePrice.toFixed(2)} zł
+                  </Text>
+                  <Text color="gray.200">
                     <strong>Ostatnia naprawa:</strong>{" "}
                     {maintenanceData && maintenanceData.length > 0
                       ? new Date(maintenanceData[0].date).toLocaleDateString(
@@ -477,6 +483,7 @@ export default function EquipmentDetailPage() {
                 name: equipment.name,
                 category: equipment.category,
                 condition: equipment.condition,
+                purchasePrice: equipment?.purchasePrice,
               }}
             />
           )}

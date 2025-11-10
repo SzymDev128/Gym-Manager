@@ -100,6 +100,7 @@ model Equipment {
   category     String
   condition    String
   purchaseDate DateTime
+  purchasePrice Float       @default(0)
   maintenance  Maintenance[]
 }
 

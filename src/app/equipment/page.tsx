@@ -32,6 +32,7 @@ interface Equipment {
   category: string;
   condition: string;
   purchaseDate: string;
+  purchasePrice: number;
 }
 
 const columnHelper = createColumnHelper<Equipment>();
@@ -133,6 +134,11 @@ export default function EquipmentPage() {
     columnHelper.accessor("purchaseDate", {
       header: "Data zakupu",
       cell: (i) => new Date(i.getValue()).toLocaleDateString("pl-PL"),
+      enableSorting: true,
+    }),
+    columnHelper.accessor("purchasePrice", {
+      header: "Cena zakupu",
+      cell: (i) => `${i.getValue().toFixed(2)} zł`,
       enableSorting: true,
     }),
     columnHelper.display({

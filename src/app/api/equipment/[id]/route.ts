@@ -44,7 +44,8 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { name, category, condition, purchaseDate } = body || {};
+    const { name, category, condition, purchaseDate, purchasePrice } =
+      body || {};
 
     const updated = await prisma.equipment.update({
       where: { id },
@@ -53,6 +54,10 @@ export async function PATCH(
         category,
         condition,
         purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
+        purchasePrice:
+          purchasePrice !== undefined && purchasePrice !== null
+            ? Number(purchasePrice)
+            : undefined,
       },
       include: { maintenance: true },
     });

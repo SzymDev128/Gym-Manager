@@ -15,15 +15,24 @@ interface EquipmentFormData {
   name: string;
   category: string;
   condition: string;
+  purchasePrice: string;
 }
 
 interface EquipmentCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (
-    data: EquipmentFormData & { purchaseDate?: string }
+    data: Omit<EquipmentFormData, "purchasePrice"> & {
+      purchasePrice: number;
+      purchaseDate?: string;
+    }
   ) => Promise<void> | void;
-  initialData?: Partial<EquipmentFormData>; // for reuse as edit modal later
+  initialData?: Partial<{
+    name: string;
+    category: string;
+    condition: string;
+    purchasePrice: number | string;
+  }>;
   mode?: "create" | "edit";
 }
 
@@ -31,6 +40,7 @@ const EMPTY_FORM: EquipmentFormData = {
   name: "",
   category: "",
   condition: "GOOD",
+  purchasePrice: "",
 };
 
 export default function EquipmentCreateModal({
@@ -49,6 +59,9 @@ export default function EquipmentCreateModal({
         name: initialData?.name || "",
         category: initialData?.category || "",
         condition: initialData?.condition || "GOOD",
+        purchasePrice: initialData?.purchasePrice
+          ? String(initialData.purchasePrice)
+          : "",
       });
     }
   }, [isOpen, initialData]);
@@ -61,16 +74,35 @@ export default function EquipmentCreateModal({
   };
 
   const handleSubmit = async () => {
-    if (!form.name || !form.category || !form.condition) {
-      return; // optionally show validation toast externally
+    if (
+      !form.name ||
+      !form.category ||
+      !form.condition ||
+      !form.purchasePrice
+    ) {
+      return; // simple presence validation
+    }
+    const numericPrice = Number(form.purchasePrice);
+    if (Number.isNaN(numericPrice) || numericPrice < 0) {
+      return; // optionally surface a toast outside
     }
     try {
       setSubmitting(true);
-      // Add current date for create mode
       const payload =
         mode === "create"
-          ? { ...form, purchaseDate: new Date().toISOString().split("T")[0] }
-          : form;
+          ? {
+              name: form.name,
+              category: form.category,
+              condition: form.condition,
+              purchasePrice: numericPrice,
+              purchaseDate: new Date().toISOString().split("T")[0],
+            }
+          : {
+              name: form.name,
+              category: form.category,
+              condition: form.condition,
+              purchasePrice: numericPrice,
+            };
       await onSave(payload);
     } finally {
       setSubmitting(false);
@@ -121,6 +153,16 @@ export default function EquipmentCreateModal({
               value={form.category}
               onChange={handleChange}
               placeholder="Kategoria"
+              bg="gray.800"
+              color="gray.200"
+            />
+            <Input
+              name="purchasePrice"
+              type="number"
+              step="0.01"
+              value={form.purchasePrice}
+              onChange={handleChange}
+              placeholder="Cena zakupu (zł)"
               bg="gray.800"
               color="gray.200"
             />

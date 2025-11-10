@@ -49,6 +49,7 @@ export async function GET(request: Request) {
       "category",
       "condition",
       "purchaseDate",
+      "purchasePrice",
     ];
     if (validSortFields.includes(sortBy)) {
       orderBy[sortBy] = sortOrder === "asc" ? "asc" : "desc";
@@ -75,7 +76,8 @@ export async function GET(request: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, category, condition, purchaseDate } = body || {};
+    const { name, category, condition, purchaseDate, purchasePrice } =
+      body || {};
 
     if (!name || !category || !condition || !purchaseDate) {
       return NextResponse.json(
@@ -87,12 +89,25 @@ export async function POST(req: Request) {
       );
     }
 
+    // Optional: validate purchasePrice if provided
+    let parsedPrice: number | undefined = undefined;
+    if (purchasePrice !== undefined && purchasePrice !== null) {
+      parsedPrice = Number(purchasePrice);
+      if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+        return NextResponse.json(
+          { error: "Invalid purchasePrice. Must be a non-negative number." },
+          { status: 400 }
+        );
+      }
+    }
+
     const created = await prisma.equipment.create({
       data: {
         name,
         category,
         condition,
         purchaseDate: new Date(purchaseDate),
+        purchasePrice: parsedPrice,
       },
       include: { maintenance: true },
     });
