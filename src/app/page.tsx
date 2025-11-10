@@ -19,13 +19,6 @@ const DASHBOARD_CARDS = [
     color: "brand.600",
   },
   {
-    title: "Pracownicy",
-    href: "/employees",
-    icon: "💼",
-    description: "Trenerzy i recepcjoniści",
-    color: "brand.600",
-  },
-  {
     title: "Sprzęt",
     href: "/equipment",
     icon: "🏋️",
@@ -37,6 +30,13 @@ const DASHBOARD_CARDS = [
     href: "/classes",
     icon: "📅",
     description: "Zajęcia grupowe",
+    color: "brand.600",
+  },
+  {
+    title: "Abonamenty",
+    href: "/memberships",
+    icon: "💳",
+    description: "Przeglądaj i zarządzaj karnetami",
     color: "brand.600",
   },
 ];
@@ -71,6 +71,14 @@ export default function HomePage() {
                     borderColor="gray.700"
                     transition="all 0.3s"
                     cursor="pointer"
+                    minW="240px"
+                    maxW="240px"
+                    minH="320px"
+                    maxH="320px"
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="center"
+                    alignItems="center"
                     _hover={{
                       transform: "translateY(-4px)",
                       borderColor: "brand.600",

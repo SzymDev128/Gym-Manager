@@ -1,4 +1,6 @@
 "use client";
+import { useState } from "react";
+import axios from "axios";
 import {
   Box,
   Container,
@@ -7,7 +9,9 @@ import {
   Table,
   Spinner,
   Badge,
+  Button,
 } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
 import {
   useReactTable,
   getCoreRowModel,
@@ -16,6 +20,7 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 import useSWR from "swr";
+import UsersEditModal from "@/components/UsersEditModal";
 
 interface User {
   id: number;
@@ -39,52 +44,158 @@ const ROLE_NAMES: Record<number, string> = {
 
 const columnHelper = createColumnHelper<User>();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const columns: ColumnDef<User, any>[] = [
-  columnHelper.accessor("id", {
-    header: "ID",
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor((row) => `${row.firstName} ${row.lastName}`, {
-    id: "fullName",
-    header: "Imię i nazwisko",
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor("email", {
-    header: "Email",
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor("roleId", {
-    header: "Rola",
-    cell: (info) => {
-      const roleName = ROLE_NAMES[info.getValue()] || "UNKNOWN";
-      const colorPalette =
-        roleName === "ADMIN"
-          ? "red"
-          : roleName === "TRAINER"
-          ? "purple"
-          : roleName === "RECEPTIONIST"
-          ? "blue"
-          : roleName === "MEMBER"
-          ? "green"
-          : "gray";
-      return <Badge colorPalette={colorPalette}>{roleName}</Badge>;
-    },
-  }),
-  columnHelper.accessor("phoneNumbers", {
-    header: "Telefon",
-    cell: (info) =>
-      info.getValue()?.[0]?.number || <Text color="gray.500">Brak</Text>,
-  }),
-  columnHelper.accessor("createdAt", {
-    header: "Data rejestracji",
-    cell: (info) => new Date(info.getValue()).toLocaleDateString("pl-PL"),
-  }),
-];
-
 export default function UsersPage() {
-  const { data: users, error, isLoading } = useSWR<User[]>("/api/users");
-  console.log(users);
+  const {
+    data: users,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<User[]>("/api/users");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (user: User) => {
+    try {
+      await axios.delete(`/api/users/${user.id}`);
+      toaster.create({
+        title: "Usunięto",
+        description: `Użytkownik ${user.firstName} ${user.lastName} został usunięty`,
+        type: "success",
+        duration: 3000,
+      });
+      mutate();
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: string } } };
+      console.error(
+        "Błąd podczas usuwania użytkownika:",
+        err?.response?.data || error
+      );
+      toaster.create({
+        title: "Błąd",
+        description:
+          err?.response?.data?.error || "Nie udało się usunąć użytkownika",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleSave = async (updatedUser: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    birthDate?: string;
+    role?: string;
+    phoneNumbers?: string[];
+  }) => {
+    if (!selectedUser) return;
+
+    try {
+      const response = await axios.patch(
+        `/api/users/${selectedUser.id}`,
+        updatedUser
+      );
+      console.log("PATCH response", response.data);
+
+      toaster.create({
+        title: "Sukces",
+        description: "Użytkownik został zaktualizowany",
+        type: "success",
+        duration: 3000,
+      });
+
+      mutate(); // Odśwież dane
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Błąd podczas aktualizacji użytkownika:", error);
+
+      toaster.create({
+        title: "Błąd",
+        description: "Nie udało się zaktualizować użytkownika",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const columns: ColumnDef<User, any>[] = [
+    columnHelper.accessor("id", {
+      header: "ID",
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor((row) => `${row.firstName} ${row.lastName}`, {
+      id: "fullName",
+      header: "Imię i nazwisko",
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("email", {
+      header: "Email",
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("roleId", {
+      header: "Rola",
+      cell: (info) => {
+        const roleName = ROLE_NAMES[info.getValue()] || "UNKNOWN";
+        const colorPalette =
+          roleName === "ADMIN"
+            ? "red"
+            : roleName === "TRAINER"
+            ? "purple"
+            : roleName === "RECEPTIONIST"
+            ? "blue"
+            : roleName === "MEMBER"
+            ? "green"
+            : "gray";
+        return <Badge colorPalette={colorPalette}>{roleName}</Badge>;
+      },
+    }),
+    columnHelper.accessor("phoneNumbers", {
+      header: "Telefon",
+      cell: (info) =>
+        info.getValue()?.[0]?.number || <Text color="gray.500">Brak</Text>,
+    }),
+    columnHelper.accessor("createdAt", {
+      header: "Data rejestracji",
+      cell: (info) => new Date(info.getValue()).toLocaleDateString("pl-PL"),
+    }),
+    columnHelper.display({
+      id: "actions",
+      header: "Akcje",
+      cell: (info) => {
+        const user = info.row.original;
+        return (
+          <Box display="flex" gap={2}>
+            <Button
+              size="sm"
+              colorScheme="purple"
+              variant="outline"
+              color="gray.200"
+              _hover={{ color: "black" }}
+              onClick={() => handleEditClick(user)}
+            >
+              Edytuj
+            </Button>
+            <Button
+              size="sm"
+              bg="brand.600"
+              color="white"
+              _hover={{ bg: "brand.400" }}
+              variant="solid"
+              onClick={() => handleDelete(user)}
+            >
+              Usuń
+            </Button>
+          </Box>
+        );
+      },
+    }),
+  ];
 
   const table = useReactTable({
     data: users || [],
@@ -138,7 +249,7 @@ export default function UsersPage() {
             <Table.Root size="sm" variant="outline">
               <Table.Header>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <Table.Row key={headerGroup.id} bg="gray.950">
+                  <Table.Row key={headerGroup.id} bg="gray.900">
                     {headerGroup.headers.map((header) => (
                       <Table.ColumnHeader
                         key={header.id}
@@ -162,7 +273,7 @@ export default function UsersPage() {
                 {table.getRowModel().rows.map((row, index) => (
                   <Table.Row
                     key={row.id}
-                    bg={index % 2 === 0 ? "gray.900" : "gray.850"}
+                    bg={index % 2 === 0 ? "gray.900" : "gray.800"}
                     _hover={{ bg: "gray.800" }}
                     transition="background 0.2s"
                   >
@@ -192,6 +303,14 @@ export default function UsersPage() {
           </Box>
         )}
       </Container>
+      {isModalOpen && selectedUser && (
+        <UsersEditModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          user={selectedUser}
+          onSave={handleSave}
+        />
+      )}
     </Box>
   );
 }
