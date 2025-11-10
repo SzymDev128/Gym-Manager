@@ -8,23 +8,23 @@ generator client {
 }
 
 model Role {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique // USER, MEMBER, RECEPTIONIST, TRAINER, ADMIN
-  users       User[]
+  id    Int    @id @default(autoincrement())
+  name  String @unique // USER, MEMBER, RECEPTIONIST, TRAINER, ADMIN
+  users User[]
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String   
+  id           Int              @id @default(autoincrement())
+  email        String           @unique
+  password     String
   firstName    String
   lastName     String
   birthDate    DateTime?
   phoneNumbers PhoneNumber[]
-  role         Role     @relation(fields: [roleId], references: [id], onDelete: NoAction)
-  roleId       Int      @default(1)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         Role             @relation(fields: [roleId], references: [id], onDelete: NoAction)
+  roleId       Int              @default(1)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   memberships  UserMembership[]
   checkIns     CheckIn[]
   employee     Employee?
@@ -43,51 +43,50 @@ model UserMembership {
 }
 
 model PhoneNumber {
-  id       Int    @id @default(autoincrement())
-  number   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   Int
+  id     Int    @id @default(autoincrement())
+  number String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
 }
 
 model Membership {
-  id          Int       @id @default(autoincrement())
-  name        String
-  durationMonths Int
-  price       Float
-  description String    @default("")
+  id              Int              @id @default(autoincrement())
+  name            String
+  durationMonths  Int
+  price           Float
+  description     String           @default("")
   userMemberships UserMembership[]
 }
 
 model Employee {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int      @unique
-  hireDate  DateTime
-  salary    Float
-  trainer   Trainer?
+  id           Int           @id @default(autoincrement())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int           @unique
+  hireDate     DateTime
+  salary       Float
+  trainer      Trainer?
   receptionist Receptionist?
 }
 
 model Trainer {
-  id             Int      @id
-  specialization String
+  id              Int       @id
+  specialization  String
   experienceYears Int
-  supervisorId   Int?
-  supervisor     Trainer? @relation("TrainerHierarchy", fields: [supervisorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  subordinates   Trainer[] @relation("TrainerHierarchy")
-  classes        Class[]
-  employee       Employee  @relation(fields: [id], references: [id], onDelete: Cascade)
+  supervisorId    Int?
+  supervisor      Trainer?  @relation("TrainerHierarchy", fields: [supervisorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subordinates    Trainer[] @relation("TrainerHierarchy")
+  classes         Class[]
+  employee        Employee  @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
-
 model Receptionist {
-  id        Int     @id
+  id         Int      @id
   shiftHours String
-  employee Employee @relation(fields: [id], references: [id], onDelete: Cascade)
+  employee   Employee @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model Class {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   startTime   DateTime
   durationMin Int
@@ -95,18 +94,17 @@ model Class {
   trainer     Trainer? @relation(fields: [trainerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-
 model Equipment {
-  id          Int     @id @default(autoincrement())
-  name        String
-  category    String
-  condition   String
+  id           Int           @id @default(autoincrement())
+  name         String
+  category     String
+  condition    String
   purchaseDate DateTime
-  maintenance Maintenance[]
+  maintenance  Maintenance[]
 }
 
 model Maintenance {
-  id          Int     @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   equipmentId Int
   equipment   Equipment @relation(fields: [equipmentId], references: [id])
   date        DateTime
@@ -115,17 +113,18 @@ model Maintenance {
 }
 
 model Payment {
-  id        Int     @id @default(autoincrement())
-  userMembershipId  Int
-  userMembership    UserMembership  @relation(fields: [userMembershipId], references: [id], onDelete: Cascade)
-  date      DateTime @default(now())
-  amount    Float
-  method    String
+  id               Int            @id @default(autoincrement())
+  userMembershipId Int
+  userMembership   UserMembership @relation(fields: [userMembershipId], references: [id], onDelete: Cascade)
+  date             DateTime       @default(now())
+  amount           Float
+  method           String
 }
 
 model CheckIn {
-  id         Int     @id @default(autoincrement())
-  userId   Int
-  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  checkInTime DateTime @default(now())
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkInTime  DateTime  @default(now())
+  checkOutTime DateTime?
 }

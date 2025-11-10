@@ -21,6 +21,7 @@ import {
 } from "@tanstack/react-table";
 import useSWR from "swr";
 import UsersEditModal from "@/components/UsersEditModal";
+import { RoleGuard } from "@/components/RoleGuard";
 
 interface User {
   id: number;
@@ -173,10 +174,18 @@ export default function UsersPage() {
           <Box display="flex" gap={2}>
             <Button
               size="sm"
-              colorScheme="purple"
-              variant="outline"
-              color="gray.200"
-              _hover={{ color: "black" }}
+              bg="blue.600"
+              color="white"
+              _hover={{ bg: "blue.400" }}
+              onClick={() => (window.location.href = `/users/${user.id}`)}
+            >
+              Szczegóły
+            </Button>
+            <Button
+              size="sm"
+              bg="purple.600"
+              color="white"
+              _hover={{ bg: "purple.400" }}
               onClick={() => handleEditClick(user)}
             >
               Edytuj
@@ -186,7 +195,6 @@ export default function UsersPage() {
               bg="brand.600"
               color="white"
               _hover={{ bg: "brand.400" }}
-              variant="solid"
               onClick={() => handleDelete(user)}
             >
               Usuń
@@ -204,113 +212,117 @@ export default function UsersPage() {
   });
 
   return (
-    <Box minH="100vh" bg="gray.900" py={10}>
-      <Container maxW="7xl">
-        <Heading
-          size="2xl"
-          bgGradient="linear(to-r, brand.600, brand.400)"
-          bgClip="text"
-          mb={4}
-        >
-          👥 Użytkownicy
-        </Heading>
-        <Text color="gray.400" mb={8}>
-          Lista wszystkich użytkowników systemu
-        </Text>
-
-        {isLoading && (
-          <Box textAlign="center" py={10}>
-            <Spinner size="xl" color="red.500" />
-          </Box>
-        )}
-
-        {error && (
-          <Box
-            bg="red.900"
-            border="1px solid"
-            borderColor="red.700"
-            p={4}
-            borderRadius="md"
+    <RoleGuard allowedRoles={[3, 4, 5]}>
+      {" "}
+      {/* RECEPTIONIST, TRAINER, ADMIN */}
+      <Box minH="100vh" bg="gray.900" py={10}>
+        <Container maxW="7xl">
+          <Heading
+            size="2xl"
+            bgGradient="linear(to-r, brand.600, brand.400)"
+            bgClip="text"
+            mb={4}
           >
-            <Text color="red.200">
-              Nie udało się załadować użytkowników. Sprawdź połączenie.
-            </Text>
-          </Box>
-        )}
+            👥 Użytkownicy
+          </Heading>
+          <Text color="gray.400" mb={8}>
+            Lista wszystkich użytkowników systemu
+          </Text>
 
-        {users && (
-          <Box
-            bg="black"
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="gray.800"
-            overflow="hidden"
-          >
-            <Table.Root size="sm" variant="outline">
-              <Table.Header>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <Table.Row key={headerGroup.id} bg="black">
-                    {headerGroup.headers.map((header) => (
-                      <Table.ColumnHeader
-                        key={header.id}
-                        color="gray.200"
-                        fontWeight="bold"
-                        py={4}
-                        borderColor="gray.500"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </Table.ColumnHeader>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Header>
-              <Table.Body>
-                {table.getRowModel().rows.map((row, index) => (
-                  <Table.Row
-                    key={row.id}
-                    bg={index % 2 === 0 ? "gray.800" : "gray.700"}
-                    _hover={{ bg: "gray.600" }}
-                    transition="background 0.2s"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <Table.Cell
-                        key={cell.id}
-                        color="gray.200"
-                        py={3}
-                        borderColor="gray.700"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </Table.Cell>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Box>
-        )}
+          {isLoading && (
+            <Box textAlign="center" py={10}>
+              <Spinner size="xl" color="red.500" />
+            </Box>
+          )}
 
-        {users && users.length === 0 && (
-          <Box textAlign="center" py={10}>
-            <Text color="gray.500">Brak użytkowników do wyświetlenia</Text>
-          </Box>
+          {error && (
+            <Box
+              bg="red.900"
+              border="1px solid"
+              borderColor="red.700"
+              p={4}
+              borderRadius="md"
+            >
+              <Text color="red.200">
+                Nie udało się załadować użytkowników. Sprawdź połączenie.
+              </Text>
+            </Box>
+          )}
+
+          {users && (
+            <Box
+              bg="black"
+              borderRadius="lg"
+              border="1px solid"
+              borderColor="gray.800"
+              overflow="hidden"
+            >
+              <Table.Root size="sm" variant="outline">
+                <Table.Header>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <Table.Row key={headerGroup.id} bg="black">
+                      {headerGroup.headers.map((header) => (
+                        <Table.ColumnHeader
+                          key={header.id}
+                          color="gray.200"
+                          fontWeight="bold"
+                          py={4}
+                          borderColor="gray.500"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </Table.ColumnHeader>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Header>
+                <Table.Body>
+                  {table.getRowModel().rows.map((row, index) => (
+                    <Table.Row
+                      key={row.id}
+                      bg={index % 2 === 0 ? "gray.800" : "gray.700"}
+                      _hover={{ bg: "gray.600" }}
+                      transition="background 0.2s"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Cell
+                          key={cell.id}
+                          color="gray.200"
+                          py={3}
+                          borderColor="gray.700"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </Box>
+          )}
+
+          {users && users.length === 0 && (
+            <Box textAlign="center" py={10}>
+              <Text color="gray.500">Brak użytkowników do wyświetlenia</Text>
+            </Box>
+          )}
+        </Container>
+        {isModalOpen && selectedUser && (
+          <UsersEditModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            user={selectedUser}
+            onSave={handleSave}
+          />
         )}
-      </Container>
-      {isModalOpen && selectedUser && (
-        <UsersEditModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          user={selectedUser}
-          onSave={handleSave}
-        />
-      )}
-    </Box>
+      </Box>
+    </RoleGuard>
   );
 }

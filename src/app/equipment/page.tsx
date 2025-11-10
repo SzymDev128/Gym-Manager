@@ -3,6 +3,7 @@
 import axios from "axios";
 import { useState } from "react";
 import EquipmentCreateModal from "@/components/EquipmentCreateModal";
+import { RoleGuard } from "@/components/RoleGuard";
 import {
   Box,
   Container,
@@ -139,148 +140,153 @@ export default function EquipmentPage() {
   });
 
   return (
-    <Box minH="100vh" bg="gray.900" py={10}>
-      <Container maxW="7xl">
-        <Heading
-          size="2xl"
-          bgGradient="linear(to-r, brand.600, brand.400)"
-          bgClip="text"
-          mb={4}
-          color={"white"}
-        >
-          🏋️ Sprzęt
-        </Heading>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={8}
-        >
-          <Text color="gray.400">Inwentarz i konserwacja</Text>
-          <Button
-            size="sm"
-            bg="green.600"
-            color="white"
-            _hover={{ bg: "green.400" }}
-            onClick={() => setIsCreateOpen(true)}
+    <RoleGuard allowedRoles={[3, 4, 5]}>
+      {/* RECEPTIONIST, TRAINER, ADMIN */}
+      <Box minH="100vh" bg="gray.900" py={10}>
+        <Container maxW="7xl">
+          <Heading
+            size="2xl"
+            bgGradient="linear(to-r, brand.600, brand.400)"
+            bgClip="text"
+            mb={4}
+            color={"white"}
           >
-            + Dodaj sprzęt
-          </Button>
-        </Box>
-
-        {isLoading && (
-          <Box textAlign="center" py={10}>
-            <Spinner size="xl" color="red.500" />
-          </Box>
-        )}
-
-        {error && (
+            🏋️ Sprzęt
+          </Heading>
           <Box
-            bg="red.900"
-            border="1px solid"
-            borderColor="red.700"
-            p={4}
-            borderRadius="md"
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={8}
           >
-            <Text color="red.200">
-              Nie udało się załadować sprzętu. Sprawdź połączenie.
-            </Text>
+            <Text color="gray.400">Inwentarz i konserwacja</Text>
+            <Button
+              size="sm"
+              bg="green.600"
+              color="white"
+              _hover={{ bg: "green.400" }}
+              onClick={() => setIsCreateOpen(true)}
+            >
+              + Dodaj sprzęt
+            </Button>
           </Box>
-        )}
 
-        {data && (
-          <Box
-            bg="black"
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="gray.800"
-            overflow="hidden"
-          >
-            <Table.Root size="sm" variant="outline">
-              <Table.Header>
-                {table.getHeaderGroups().map((hg) => (
-                  <Table.Row key={hg.id} bg="black">
-                    {hg.headers.map((h) => (
-                      <Table.ColumnHeader
-                        key={h.id}
-                        color="gray.200"
-                        fontWeight="bold"
-                        py={4}
-                        borderColor="gray.500"
-                      >
-                        {h.isPlaceholder
-                          ? null
-                          : flexRender(
-                              h.column.columnDef.header,
-                              h.getContext()
-                            )}
-                      </Table.ColumnHeader>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Header>
-              <Table.Body>
-                {table.getRowModel().rows.map((row, index) => (
-                  <Table.Row
-                    key={row.id}
-                    bg={index % 2 === 0 ? "gray.800" : "gray.700"}
-                    _hover={{ bg: "gray.600" }}
-                    transition="background 0.2s"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <Table.Cell
-                        key={cell.id}
-                        color="gray.200"
-                        py={3}
-                        borderColor="gray.700"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </Table.Cell>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Box>
-        )}
+          {isLoading && (
+            <Box textAlign="center" py={10}>
+              <Spinner size="xl" color="red.500" />
+            </Box>
+          )}
 
-        {data && data.length === 0 && (
-          <Box textAlign="center" py={10}>
-            <Text color="gray.500">Brak sprzętu do wyświetlenia</Text>
-          </Box>
+          {error && (
+            <Box
+              bg="red.900"
+              border="1px solid"
+              borderColor="red.700"
+              p={4}
+              borderRadius="md"
+            >
+              <Text color="red.200">
+                Nie udało się załadować sprzętu. Sprawdź połączenie.
+              </Text>
+            </Box>
+          )}
+
+          {data && (
+            <Box
+              bg="black"
+              borderRadius="lg"
+              border="1px solid"
+              borderColor="gray.800"
+              overflow="hidden"
+            >
+              <Table.Root size="sm" variant="outline">
+                <Table.Header>
+                  {table.getHeaderGroups().map((hg) => (
+                    <Table.Row key={hg.id} bg="black">
+                      {hg.headers.map((h) => (
+                        <Table.ColumnHeader
+                          key={h.id}
+                          color="gray.200"
+                          fontWeight="bold"
+                          py={4}
+                          borderColor="gray.500"
+                        >
+                          {h.isPlaceholder
+                            ? null
+                            : flexRender(
+                                h.column.columnDef.header,
+                                h.getContext()
+                              )}
+                        </Table.ColumnHeader>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Header>
+                <Table.Body>
+                  {table.getRowModel().rows.map((row, index) => (
+                    <Table.Row
+                      key={row.id}
+                      bg={index % 2 === 0 ? "gray.800" : "gray.700"}
+                      _hover={{ bg: "gray.600" }}
+                      transition="background 0.2s"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Cell
+                          key={cell.id}
+                          color="gray.200"
+                          py={3}
+                          borderColor="gray.700"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </Box>
+          )}
+
+          {data && data.length === 0 && (
+            <Box textAlign="center" py={10}>
+              <Text color="gray.500">Brak sprzętu do wyświetlenia</Text>
+            </Box>
+          )}
+        </Container>
+        {isCreateOpen && (
+          <EquipmentCreateModal
+            isOpen={isCreateOpen}
+            onClose={() => setIsCreateOpen(false)}
+            onSave={async (form) => {
+              try {
+                const res = await axios.post("/api/equipment", form);
+                toaster.create({
+                  title: "Dodano",
+                  description: `Sprzęt \"${res.data.name}\" został dodany`,
+                  type: "success",
+                  duration: 3000,
+                });
+                mutate();
+                setIsCreateOpen(false);
+              } catch (error) {
+                const err = error as {
+                  response?: { data?: { error?: string } };
+                };
+                toaster.create({
+                  title: "Błąd",
+                  description:
+                    err?.response?.data?.error || "Nie udało się dodać sprzętu",
+                  type: "error",
+                  duration: 5000,
+                });
+              }
+            }}
+          />
         )}
-      </Container>
-      {isCreateOpen && (
-        <EquipmentCreateModal
-          isOpen={isCreateOpen}
-          onClose={() => setIsCreateOpen(false)}
-          onSave={async (form) => {
-            try {
-              const res = await axios.post("/api/equipment", form);
-              toaster.create({
-                title: "Dodano",
-                description: `Sprzęt \"${res.data.name}\" został dodany`,
-                type: "success",
-                duration: 3000,
-              });
-              mutate();
-              setIsCreateOpen(false);
-            } catch (error) {
-              const err = error as { response?: { data?: { error?: string } } };
-              toaster.create({
-                title: "Błąd",
-                description:
-                  err?.response?.data?.error || "Nie udało się dodać sprzętu",
-                type: "error",
-                duration: 5000,
-              });
-            }
-          }}
-        />
-      )}
-    </Box>
+      </Box>
+    </RoleGuard>
   );
 }

@@ -9,6 +9,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DASHBOARD_CARDS = [
   {
@@ -17,6 +18,7 @@ const DASHBOARD_CARDS = [
     icon: "👥",
     description: "Zarządzaj członkami siłowni",
     color: "brand.600",
+    allowedRoles: [3, 4, 5], // RECEPTIONIST, TRAINER, ADMIN
   },
   {
     title: "Sprzęt",
@@ -24,6 +26,7 @@ const DASHBOARD_CARDS = [
     icon: "🏋️",
     description: "Inwentarz i konserwacja",
     color: "brand.600",
+    allowedRoles: [3, 4, 5], // RECEPTIONIST, TRAINER, ADMIN
   },
   {
     title: "Sale",
@@ -31,6 +34,7 @@ const DASHBOARD_CARDS = [
     icon: "📅",
     description: "Zajęcia grupowe",
     color: "brand.600",
+    allowedRoles: [1, 2, 3, 4, 5], // Wszyscy
   },
   {
     title: "Abonamenty",
@@ -38,14 +42,22 @@ const DASHBOARD_CARDS = [
     icon: "💳",
     description: "Przeglądaj i zarządzaj karnetami",
     color: "brand.600",
+    allowedRoles: [1, 2, 3, 4, 5], // Wszyscy
   },
 ];
 
 export default function HomePage() {
+  const { user } = useAuth();
+
+  const filteredCards = DASHBOARD_CARDS.filter((card) => {
+    if (!user) return false;
+    return card.allowedRoles.includes(user.roleId);
+  });
+
   return (
     <Box minH="100vh" bg="gray.900">
       <Container maxW="container.xl" py={12}>
-        <VStack gap={8} align="stretch">
+        <VStack gap={8} align="center">
           {/* Header */}
           <VStack gap={2} textAlign="center">
             <Heading size="2xl" color="white">
@@ -59,8 +71,15 @@ export default function HomePage() {
             </Text>
           </VStack>
 
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap={6} mt={8}>
-            {DASHBOARD_CARDS.map((card) => (
+          <SimpleGrid
+            columns={{ base: 1, md: 2, lg: 4 }}
+            gap={6}
+            mt={8}
+            justifyItems="center"
+            mx="auto"
+            w="fit-content"
+          >
+            {filteredCards.map((card) => (
               <Link key={card.href} asChild _hover={{ textDecoration: "none" }}>
                 <NextLink href={card.href}>
                   <Box

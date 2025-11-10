@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import EquipmentCreateModal from "@/components/EquipmentCreateModal";
 import MaintenanceCreateModal from "@/components/MaintenanceCreateModal";
+import { RoleGuard } from "@/components/RoleGuard";
 import {
   Box,
   Container,
@@ -296,208 +297,220 @@ export default function EquipmentDetailPage() {
       : "gray";
 
   return (
-    <Box minH="100vh" bg="gray.900" py={8}>
-      <Container maxW="container.xl">
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={6}
-        >
-          <Heading size="xl" color="white">
-            Szczegóły sprzętu
-          </Heading>
-          <Button
-            variant="outline"
-            colorPalette="purple"
-            onClick={() => router.push("/equipment")}
+    <RoleGuard allowedRoles={[3, 4, 5]}>
+      {" "}
+      {/* RECEPTIONIST, TRAINER, ADMIN */}
+      <Box minH="100vh" bg="gray.900" py={8}>
+        <Container maxW="container.xl">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={6}
           >
-            Powrót do listy
-          </Button>
-        </Box>
-
-        <Card.Root
-          bg="gray.800"
-          p={6}
-          mb={6}
-          borderWidth="1px"
-          borderColor="gray.700"
-        >
-          <Box display="flex" justifyContent="space-between" alignItems="start">
-            <Box>
-              <Heading size="lg" mb={4} color="white">
-                {equipment.name}
-              </Heading>
-              <Box display="flex" flexDirection="column" gap={2}>
-                <Text color="gray.200">
-                  <strong>ID:</strong> {equipment.id}
-                </Text>
-                <Text color="gray.200">
-                  <strong>Kategoria:</strong> {equipment.category}
-                </Text>
-                <Text color="gray.200">
-                  <strong>Stan:</strong>{" "}
-                  <Badge colorPalette={conditionColor}>{conditionLabel}</Badge>
-                </Text>
-                <Text color="gray.200">
-                  <strong>Data zakupu:</strong>{" "}
-                  {new Date(equipment.purchaseDate).toLocaleDateString("pl-PL")}
-                </Text>
-                <Text color="gray.200">
-                  <strong>Ostatnia naprawa:</strong>{" "}
-                  {maintenanceData && maintenanceData.length > 0
-                    ? new Date(maintenanceData[0].date).toLocaleDateString(
-                        "pl-PL"
-                      )
-                    : "Brak"}
-                </Text>
-              </Box>
-            </Box>
-            <Button colorPalette="purple" onClick={() => setIsEditOpen(true)}>
-              Edytuj sprzęt
+            <Heading size="xl" color="white">
+              Szczegóły sprzętu
+            </Heading>
+            <Button
+              variant="outline"
+              colorPalette="purple"
+              onClick={() => router.push("/equipment")}
+            >
+              Powrót do listy
             </Button>
           </Box>
-        </Card.Root>
 
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={4}
-        >
-          <Heading size="lg" color="white">
-            Historia napraw
-          </Heading>
-          <Button
-            size="sm"
-            bg="green.600"
-            color="white"
-            _hover={{ bg: "green.400" }}
-            onClick={() => setIsMaintenanceOpen(true)}
-          >
-            + Dodaj naprawę
-          </Button>
-        </Box>
-
-        {maintLoading ? (
-          <Box display="flex" justifyContent="center" py={8}>
-            <Spinner color="brand.600" />
-          </Box>
-        ) : maintError ? (
-          <Text color="red.400">Błąd ładowania historii napraw</Text>
-        ) : !maintenanceData || maintenanceData.length === 0 ? (
           <Card.Root
             bg="gray.800"
             p={6}
+            mb={6}
             borderWidth="1px"
             borderColor="gray.700"
           >
-            <Text textAlign="center" color="gray.400">
-              Brak historii napraw dla tego sprzętu
-            </Text>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="start"
+            >
+              <Box>
+                <Heading size="lg" mb={4} color="white">
+                  {equipment.name}
+                </Heading>
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Text color="gray.200">
+                    <strong>ID:</strong> {equipment.id}
+                  </Text>
+                  <Text color="gray.200">
+                    <strong>Kategoria:</strong> {equipment.category}
+                  </Text>
+                  <Text color="gray.200">
+                    <strong>Stan:</strong>{" "}
+                    <Badge colorPalette={conditionColor}>
+                      {conditionLabel}
+                    </Badge>
+                  </Text>
+                  <Text color="gray.200">
+                    <strong>Data zakupu:</strong>{" "}
+                    {new Date(equipment.purchaseDate).toLocaleDateString(
+                      "pl-PL"
+                    )}
+                  </Text>
+                  <Text color="gray.200">
+                    <strong>Ostatnia naprawa:</strong>{" "}
+                    {maintenanceData && maintenanceData.length > 0
+                      ? new Date(maintenanceData[0].date).toLocaleDateString(
+                          "pl-PL"
+                        )
+                      : "Brak"}
+                  </Text>
+                </Box>
+              </Box>
+              <Button colorPalette="purple" onClick={() => setIsEditOpen(true)}>
+                Edytuj sprzęt
+              </Button>
+            </Box>
           </Card.Root>
-        ) : (
+
           <Box
-            overflowX="auto"
-            bg="black"
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="gray.800"
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={4}
           >
-            <Table.Root size="sm" variant="outline">
-              <Table.Header>
-                {maintenanceTable.getHeaderGroups().map((headerGroup) => (
-                  <Table.Row key={headerGroup.id} bg="black">
-                    {headerGroup.headers.map((header) => (
-                      <Table.ColumnHeader
-                        key={header.id}
-                        color="gray.200"
-                        fontWeight="bold"
-                        py={4}
-                        borderColor="gray.500"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </Table.ColumnHeader>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Header>
-              <Table.Body>
-                {maintenanceTable.getRowModel().rows.map((row, idx) => (
-                  <Table.Row
-                    key={row.id}
-                    bg={idx % 2 === 0 ? "gray.800" : "gray.700"}
-                    _hover={{ bg: "gray.600" }}
-                    transition="background 0.2s"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <Table.Cell
-                        key={cell.id}
-                        color="gray.200"
-                        py={3}
-                        borderColor="gray.700"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </Table.Cell>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
+            <Heading size="lg" color="white">
+              Historia napraw
+            </Heading>
+            <Button
+              size="sm"
+              bg="green.600"
+              color="white"
+              _hover={{ bg: "green.400" }}
+              onClick={() => setIsMaintenanceOpen(true)}
+            >
+              + Dodaj naprawę
+            </Button>
           </Box>
-        )}
 
-        {isEditOpen && equipment && (
-          <EquipmentCreateModal
-            isOpen={isEditOpen}
-            onClose={() => setIsEditOpen(false)}
-            onSave={handleEditSave}
-            mode="edit"
-            initialData={{
-              name: equipment.name,
-              category: equipment.category,
-              condition: equipment.condition,
-            }}
-          />
-        )}
+          {maintLoading ? (
+            <Box display="flex" justifyContent="center" py={8}>
+              <Spinner color="brand.600" />
+            </Box>
+          ) : maintError ? (
+            <Text color="red.400">Błąd ładowania historii napraw</Text>
+          ) : !maintenanceData || maintenanceData.length === 0 ? (
+            <Card.Root
+              bg="gray.800"
+              p={6}
+              borderWidth="1px"
+              borderColor="gray.700"
+            >
+              <Text textAlign="center" color="gray.400">
+                Brak historii napraw dla tego sprzętu
+              </Text>
+            </Card.Root>
+          ) : (
+            <Box
+              overflowX="auto"
+              bg="black"
+              borderRadius="md"
+              borderWidth="1px"
+              borderColor="gray.800"
+            >
+              <Table.Root size="sm" variant="outline">
+                <Table.Header>
+                  {maintenanceTable.getHeaderGroups().map((headerGroup) => (
+                    <Table.Row key={headerGroup.id} bg="black">
+                      {headerGroup.headers.map((header) => (
+                        <Table.ColumnHeader
+                          key={header.id}
+                          color="gray.200"
+                          fontWeight="bold"
+                          py={4}
+                          borderColor="gray.500"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </Table.ColumnHeader>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Header>
+                <Table.Body>
+                  {maintenanceTable.getRowModel().rows.map((row, idx) => (
+                    <Table.Row
+                      key={row.id}
+                      bg={idx % 2 === 0 ? "gray.800" : "gray.700"}
+                      _hover={{ bg: "gray.600" }}
+                      transition="background 0.2s"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Cell
+                          key={cell.id}
+                          color="gray.200"
+                          py={3}
+                          borderColor="gray.700"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </Box>
+          )}
 
-        {isMaintenanceOpen && (
-          <MaintenanceCreateModal
-            isOpen={isMaintenanceOpen}
-            onClose={() => setIsMaintenanceOpen(false)}
-            onSave={handleMaintenanceSave}
-            equipmentId={Number(id)}
-          />
-        )}
+          {isEditOpen && equipment && (
+            <EquipmentCreateModal
+              isOpen={isEditOpen}
+              onClose={() => setIsEditOpen(false)}
+              onSave={handleEditSave}
+              mode="edit"
+              initialData={{
+                name: equipment.name,
+                category: equipment.category,
+                condition: equipment.condition,
+              }}
+            />
+          )}
 
-        {isMaintenanceEditOpen && selectedMaintenance && (
-          <MaintenanceCreateModal
-            isOpen={isMaintenanceEditOpen}
-            onClose={() => {
-              setIsMaintenanceEditOpen(false);
-              setSelectedMaintenance(null);
-            }}
-            onSave={handleMaintenanceEditSave}
-            equipmentId={Number(id)}
-            mode="edit"
-            initialData={{
-              date: new Date(selectedMaintenance.date)
-                .toISOString()
-                .split("T")[0],
-              cost: selectedMaintenance.cost.toString(),
-              description: selectedMaintenance.description || "",
-            }}
-          />
-        )}
-      </Container>
-    </Box>
+          {isMaintenanceOpen && (
+            <MaintenanceCreateModal
+              isOpen={isMaintenanceOpen}
+              onClose={() => setIsMaintenanceOpen(false)}
+              onSave={handleMaintenanceSave}
+              equipmentId={Number(id)}
+            />
+          )}
+
+          {isMaintenanceEditOpen && selectedMaintenance && (
+            <MaintenanceCreateModal
+              isOpen={isMaintenanceEditOpen}
+              onClose={() => {
+                setIsMaintenanceEditOpen(false);
+                setSelectedMaintenance(null);
+              }}
+              onSave={handleMaintenanceEditSave}
+              equipmentId={Number(id)}
+              mode="edit"
+              initialData={{
+                date: new Date(selectedMaintenance.date)
+                  .toISOString()
+                  .split("T")[0],
+                cost: selectedMaintenance.cost.toString(),
+                description: selectedMaintenance.description || "",
+              }}
+            />
+          )}
+        </Container>
+      </Box>
+    </RoleGuard>
   );
 }
