@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
 // GET /api/maintenance - list all maintenance records
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const equipmentId = searchParams.get("equipmentId");
+
+    const where = equipmentId ? { equipmentId: Number(equipmentId) } : {};
+
     const items = await prisma.maintenance.findMany({
+      where,
       include: { equipment: true },
-      orderBy: { id: "desc" },
+      orderBy: { date: "desc" },
     });
     return NextResponse.json(items);
   } catch (e: unknown) {

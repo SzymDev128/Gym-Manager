@@ -235,6 +235,7 @@ export default function UsersEditModal({
               ))}
               <Button
                 size="sm"
+                color={"white"}
                 variant="outline"
                 colorScheme="green"
                 onClick={addPhone}

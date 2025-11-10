@@ -204,7 +204,7 @@ export default function UsersPage() {
   });
 
   return (
-    <Box minH="100vh" bg="black" py={10}>
+    <Box minH="100vh" bg="gray.900" py={10}>
       <Container maxW="7xl">
         <Heading
           size="2xl"
@@ -240,7 +240,7 @@ export default function UsersPage() {
 
         {users && (
           <Box
-            bg="gray.900"
+            bg="black"
             borderRadius="lg"
             border="1px solid"
             borderColor="gray.800"
@@ -249,14 +249,14 @@ export default function UsersPage() {
             <Table.Root size="sm" variant="outline">
               <Table.Header>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <Table.Row key={headerGroup.id} bg="gray.900">
+                  <Table.Row key={headerGroup.id} bg="black">
                     {headerGroup.headers.map((header) => (
                       <Table.ColumnHeader
                         key={header.id}
                         color="gray.200"
                         fontWeight="bold"
                         py={4}
-                        borderColor="gray.800"
+                        borderColor="gray.500"
                       >
                         {header.isPlaceholder
                           ? null
@@ -273,16 +273,16 @@ export default function UsersPage() {
                 {table.getRowModel().rows.map((row, index) => (
                   <Table.Row
                     key={row.id}
-                    bg={index % 2 === 0 ? "gray.900" : "gray.800"}
-                    _hover={{ bg: "gray.800" }}
+                    bg={index % 2 === 0 ? "gray.800" : "gray.700"}
+                    _hover={{ bg: "gray.600" }}
                     transition="background 0.2s"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <Table.Cell
                         key={cell.id}
-                        color="gray.400"
+                        color="gray.200"
                         py={3}
-                        borderColor="gray.800"
+                        borderColor="gray.700"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
