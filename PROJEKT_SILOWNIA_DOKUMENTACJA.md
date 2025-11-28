@@ -156,14 +156,12 @@ npx prisma db seed
 #### Przykładowe zapytania SQL (surowy kod)
 
 1. Użytkownicy pogrupowani po roli (GROUP BY + COUNT):
-```sql
+
 SELECT roleId, COUNT(id) AS user_count
 FROM [User]
 GROUP BY roleId
 ORDER BY user_count DESC;
-```
 
-2. Użytkownicy z więcej niż 5 wejściami (GROUP BY + HAVING):
 ```sql
 SELECT userId, COUNT(id) AS checkin_count
 FROM CheckIn
@@ -173,6 +171,7 @@ ORDER BY checkin_count DESC;
 ```
 
 3. Użytkownicy bez żadnego wejścia (LEFT JOIN):
+
 ```sql
 SELECT u.id, u.firstName, u.lastName, u.email, r.name AS roleName
 FROM [User] u
@@ -183,6 +182,7 @@ ORDER BY u.createdAt DESC;
 ```
 
 4. Sprzęt z datą ostatniego przeglądu (CORRELATED SUBQUERY):
+
 ```sql
 SELECT e.*, m.id AS maintenanceId, m.date, m.cost, m.description
 FROM Equipment e
@@ -196,6 +196,7 @@ ORDER BY e.id;
 ```
 
 5. Użytkownicy z aktywnym członkostwem droższym niż średnia (UNCORRELATED SUBQUERY):
+
 ```sql
 SELECT u.id, u.firstName, u.lastName, u.email, m.name, m.price
 FROM UserMembership um
@@ -207,6 +208,7 @@ ORDER BY m.price DESC;
 ```
 
 6. Wyszukiwanie użytkowników po imieniu, nazwisku lub emailu (LIKE):
+
 ```sql
 SELECT *
 FROM [User]
@@ -216,6 +218,7 @@ WHERE firstName LIKE '%szukana%'
 ```
 
 7. Wyszukiwanie sprzętu po nazwie lub kategorii (LIKE):
+
 ```sql
 SELECT *
 FROM Equipment
@@ -224,6 +227,7 @@ WHERE name LIKE '%szukana%'
 ```
 
 8. Użytkownicy o roli TRAINER, ADMIN, RECEPTIONIST (IN + SUBQUERY):
+
 ```sql
 SELECT *
 FROM [User]
@@ -233,6 +237,7 @@ WHERE roleId IN (
 ```
 
 9. Użytkownicy z aktywnym członkostwem (EXISTS):
+
 ```sql
 SELECT *
 FROM [User] u
@@ -242,6 +247,7 @@ WHERE EXISTS (
 ```
 
 10. Sprzęt droższy niż jakiekolwiek członkostwo (ANY):
+
 ```sql
 SELECT *
 FROM Equipment
@@ -249,6 +255,7 @@ WHERE purchasePrice > ANY (SELECT price FROM Membership);
 ```
 
 11. Sprzęt droższy niż wszystkie członkostwa (ALL):
+
 ```sql
 SELECT *
 FROM Equipment
@@ -256,6 +263,7 @@ WHERE purchasePrice > ALL (SELECT price FROM Membership);
 ```
 
 12. Lista wszystkich członkostw użytkownika:
+
 ```sql
 SELECT m.*
 FROM Membership m
@@ -264,6 +272,7 @@ WHERE um.userId = @userId;
 ```
 
 13. Lista wszystkich przeglądów sprzętu:
+
 ```sql
 SELECT *
 FROM Maintenance
@@ -272,6 +281,7 @@ ORDER BY date DESC;
 ```
 
 14. Lista wszystkich płatności użytkownika:
+
 ```sql
 SELECT *
 FROM Payment
@@ -280,6 +290,7 @@ ORDER BY paymentDate DESC;
 ```
 
 15. Lista wszystkich klas prowadzonych przez trenera:
+
 ```sql
 SELECT *
 FROM Class
@@ -345,3 +356,406 @@ yarn dev
 - `docs/uml-diagram.puml`
 - Zrzuty ekranu
 - Pliki .sql z zapytaniami (jeśli przygotowane)
+
+---
+
+## 14. Dokumentacja API (PL)
+
+Poniżej znajduje się dokumentacja najważniejszych endpointów API systemu siłowni. Każdy endpoint zawiera krótki opis, wymagane parametry oraz przykładową odpowiedź.
+
+### Autoryzacja
+
+#### POST `/api/auth/login`
+
+**Opis:** Logowanie użytkownika.
+
+**Body:**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "haslo"
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "token": "jwt-token",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "role": "MEMBER"
+  }
+}
+```
+
+#### POST `/api/auth/register`
+
+**Opis:** Rejestracja nowego użytkownika.
+
+**Body:**
+
+```json
+{
+  "email": "nowy@example.com",
+  "password": "haslo",
+  "firstName": "Jan",
+  "lastName": "Kowalski"
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 2,
+  "email": "nowy@example.com",
+  "role": "MEMBER"
+}
+```
+
+#### POST `/api/auth/logout`
+
+**Opis:** Wylogowanie użytkownika (wymaga tokena JWT).
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "message": "Wylogowano pomyślnie."
+}
+```
+
+---
+
+### Użytkownicy
+
+#### GET `/api/users`
+
+**Opis:** Pobiera listę wszystkich użytkowników.
+
+**Przykładowa odpowiedź:**
+
+```json
+[
+  {
+    "id": 1,
+    "email": "user@example.com",
+    "firstName": "Jan",
+    "lastName": "Kowalski",
+    "role": "MEMBER"
+  },
+  {
+    "id": 2,
+    "email": "nowy@example.com",
+    "firstName": "Anna",
+    "lastName": "Nowak",
+    "role": "TRAINER"
+  }
+]
+```
+
+#### GET `/api/users/{id}`
+
+**Opis:** Pobiera szczegóły użytkownika o podanym ID.
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "firstName": "Jan",
+  "lastName": "Kowalski",
+  "role": "MEMBER",
+  "phoneNumbers": ["123456789", "987654321"]
+}
+```
+
+#### POST `/api/users`
+
+**Opis:** Dodaje nowego użytkownika.
+
+**Body:**
+
+```json
+{
+  "email": "nowy@example.com",
+  "password": "haslo",
+  "firstName": "Anna",
+  "lastName": "Nowak",
+  "role": "MEMBER"
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 3,
+  "email": "nowy@example.com",
+  "role": "MEMBER"
+}
+```
+
+---
+
+### Członkostwa
+
+#### GET `/api/memberships`
+
+**Opis:** Pobiera listę dostępnych typów członkostw.
+
+**Przykładowa odpowiedź:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Standard",
+    "price": 99.99,
+    "duration": 30
+  },
+  {
+    "id": 2,
+    "name": "Premium",
+    "price": 149.99,
+    "duration": 30
+  }
+]
+```
+
+#### POST `/api/memberships`
+
+**Opis:** Dodaje nowy typ członkostwa.
+
+**Body:**
+
+```json
+{
+  "name": "VIP",
+  "price": 199.99,
+  "duration": 30
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 3,
+  "name": "VIP",
+  "price": 199.99,
+  "duration": 30
+}
+```
+
+---
+
+### Zajęcia
+
+#### GET `/api/classes`
+
+**Opis:** Pobiera listę zajęć.
+
+**Przykładowa odpowiedź:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Yoga",
+    "trainerId": 2,
+    "startTime": "2025-12-01T10:00:00Z",
+    "duration": 60
+  }
+]
+```
+
+#### POST `/api/classes`
+
+**Opis:** Dodaje nowe zajęcia.
+
+**Body:**
+
+```json
+{
+  "name": "Pilates",
+  "trainerId": 2,
+  "startTime": "2025-12-02T12:00:00Z",
+  "duration": 60
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 2,
+  "name": "Pilates",
+  "trainerId": 2,
+  "startTime": "2025-12-02T12:00:00Z",
+  "duration": 60
+}
+```
+
+---
+
+### Sprzęt
+
+#### GET `/api/equipment`
+
+**Opis:** Pobiera listę sprzętu.
+
+**Przykładowa odpowiedź:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Bieżnia",
+    "purchaseDate": "2023-01-10",
+    "purchasePrice": 5000.0
+  }
+]
+```
+
+#### POST `/api/equipment`
+
+**Opis:** Dodaje nowy sprzęt.
+
+**Body:**
+
+```json
+{
+  "name": "Rower stacjonarny",
+  "purchaseDate": "2023-02-15",
+  "purchasePrice": 3000.0
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 2,
+  "name": "Rower stacjonarny",
+  "purchaseDate": "2023-02-15",
+  "purchasePrice": 3000.0
+}
+```
+
+---
+
+### Płatności
+
+#### GET `/api/payments`
+
+**Opis:** Pobiera listę płatności użytkowników.
+
+**Przykładowa odpowiedź:**
+
+```json
+[
+  {
+    "id": 1,
+    "userMembershipId": 1,
+    "amount": 99.99,
+    "date": "2025-11-01"
+  }
+]
+```
+
+#### POST `/api/payments`
+
+**Opis:** Dodaje nową płatność.
+
+**Body:**
+
+```json
+{
+  "userMembershipId": 1,
+  "amount": 99.99,
+  "date": "2025-11-01"
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 2,
+  "userMembershipId": 1,
+  "amount": 99.99,
+  "date": "2025-11-01"
+}
+```
+
+---
+
+### Wejścia (Check-in)
+
+#### GET `/api/checkins`
+
+**Opis:** Pobiera listę wejść użytkowników na siłownię.
+
+**Przykładowa odpowiedź:**
+
+```json
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "checkInTime": "2025-11-28T08:00:00Z",
+    "checkOutTime": null
+  }
+]
+```
+
+#### POST `/api/checkins`
+
+**Opis:** Rejestruje nowe wejście użytkownika.
+
+**Body:**
+
+```json
+{
+  "userId": 1,
+  "checkInTime": "2025-11-28T08:00:00Z"
+}
+```
+
+**Przykładowa odpowiedź:**
+
+```json
+{
+  "id": 2,
+  "userId": 1,
+  "checkInTime": "2025-11-28T08:00:00Z",
+  "checkOutTime": null
+}
+```
+
+---
+
+### Pracownicy, trenerzy, recepcjoniści
+
+#### GET `/api/employees`
+
+**Opis:** Pobiera listę pracowników.
+
+#### GET `/api/trainers`
+
+**Opis:** Pobiera listę trenerów.
+
+#### GET `/api/receptionists`
+
+**Opis:** Pobiera listę recepcjonistów.
+
+Przykładowe odpowiedzi analogiczne do użytkowników, z dodatkowymi polami specyficznymi dla danej roli.
+
+---
+
+**Uwaga:** Wszystkie endpointy wymagające autoryzacji muszą być wywoływane z nagłówkiem `Authorization: Bearer <token>`.
