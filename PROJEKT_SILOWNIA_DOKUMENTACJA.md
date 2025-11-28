@@ -42,6 +42,21 @@ Celem projektu jest zaprojektowanie i implementacja systemu wspierającego zarz�
 
 ## 3. Modele danych (ER Chen, Barker, UML)
 
+### 3.0. Warunki i założenia poprawności modeli
+
+- Dane osobowe użytkowników (User) są unikalne w zakresie `email`; `email` jest identyfikatorem logowania i nie może się powtarzać.
+- Każdy użytkownik musi posiadać jedną rolę (`roleId` NOT NULL). Usunięcie roli z przypisanymi użytkownikami jest zabronione (FK restrykcyjny – NoAction) – najpierw należy przepiąć użytkowników.
+- Atrybut wielowartościowy numeru telefonu jest znormalizowany do encji `PhoneNumber`; numer telefonu zawsze należy do dokładnie jednego użytkownika (FK NOT NULL, kaskada na usunięcie użytkownika).
+- Hierarchia pracownicza: `Employee` istnieje tylko dla użytkowników będących pracownikami. Specjalizacje `Trainer` i `Receptionist` dziedziczą identyfikator pracownika (1:1) i nie mogą istnieć bez `Employee`.
+- Związek unarny trenerów: `Trainer.supervisorId` może być NULL (brak przełożonego). Przełożony musi być istniejącym trenerem (spójność referencyjna). System nie dopuszcza ustawienia trenera jako własnego przełożonego ani tworzenia cykli (logika aplikacji).
+- Zajęcia (`Class`) mogą, ale nie muszą mieć przypisanego trenera (`trainerId` NULL). Usunięcie trenera nie usuwa zajęć (NoAction) – spójność merytoryczna: zajęcia mogą zostać nieobsadzone.
+- Członkostwa użytkowników (`UserMembership`) odwzorowują relację M:N z atrybutami (`startDate`, `endDate`, `active`). Rekord `UserMembership` wymaga istniejącego `User` i `Membership` (oba FKs NOT NULL).
+- Płatności (`Payment`) są powiązane wyłącznie z konkretnym przypisaniem `UserMembership`; usunięcie `UserMembership` usuwa powiązane płatności (onDelete: Cascade). Kwoty płatności są dodatnie.
+- Rejestry wejść (`CheckIn`) są ściśle powiązane z `User` (FK NOT NULL, kaskada przy usunięciu użytkownika). `checkOutTime` może być NULL (użytkownik jeszcze na siłowni).
+- Sprzęt (`Equipment`) posiada rekordy konserwacji (`Maintenance`); konserwacje nie istnieją bez sprzętu (FK NOT NULL). Koszt konserwacji jest nieujemny.
+- Wszystkie daty (`startTime`, `hireDate`, `purchaseDate`, `date`) mieszczą się w realistycznych zakresach kalendarzowych; `endDate` ≥ `startDate`.
+- Integralność biznesowa: rola `TRAINER` wymaga istnienia `Employee` i rekordu `Trainer`; rola `RECEPTIONIST` wymaga `Employee` i `Receptionist`. Zmiana roli użytkownika automatycznie provisionuje lub usuwa podencje zgodnie z logiką API.
+
 ### 3.1. ER w notacji Chen
 
 - Encje: Role, User, PhoneNumber, Membership, UserMembership, Employee, Trainer, Receptionist, Class, Equipment, Maintenance, Payment, CheckIn
@@ -138,7 +153,139 @@ npx prisma db seed
 - LIKE (wyszukiwanie): `GET /api/users`, `GET /api/equipment`
 - Self-join: `GET /api/employees?role=trainer` (supervisor/subordinates)
 
-[Tu wstawić listę zapytań w czystym SQL i ich wyniki]
+#### Przykładowe zapytania SQL (surowy kod)
+
+1. Użytkownicy pogrupowani po roli (GROUP BY + COUNT):
+```sql
+SELECT roleId, COUNT(id) AS user_count
+FROM [User]
+GROUP BY roleId
+ORDER BY user_count DESC;
+```
+
+2. Użytkownicy z więcej niż 5 wejściami (GROUP BY + HAVING):
+```sql
+SELECT userId, COUNT(id) AS checkin_count
+FROM CheckIn
+GROUP BY userId
+HAVING COUNT(id) > 5
+ORDER BY checkin_count DESC;
+```
+
+3. Użytkownicy bez żadnego wejścia (LEFT JOIN):
+```sql
+SELECT u.id, u.firstName, u.lastName, u.email, r.name AS roleName
+FROM [User] u
+LEFT JOIN CheckIn c ON c.userId = u.id
+JOIN Role r ON u.roleId = r.id
+WHERE c.id IS NULL
+ORDER BY u.createdAt DESC;
+```
+
+4. Sprzęt z datą ostatniego przeglądu (CORRELATED SUBQUERY):
+```sql
+SELECT e.*, m.id AS maintenanceId, m.date, m.cost, m.description
+FROM Equipment e
+JOIN Maintenance m ON m.equipmentId = e.id
+WHERE m.date = (
+  SELECT MAX(m2.date)
+  FROM Maintenance m2
+  WHERE m2.equipmentId = e.id
+)
+ORDER BY e.id;
+```
+
+5. Użytkownicy z aktywnym członkostwem droższym niż średnia (UNCORRELATED SUBQUERY):
+```sql
+SELECT u.id, u.firstName, u.lastName, u.email, m.name, m.price
+FROM UserMembership um
+JOIN [User] u ON u.id = um.userId
+JOIN Membership m ON m.id = um.membershipId
+WHERE m.price > (SELECT AVG(price) FROM Membership)
+  AND um.active = 1
+ORDER BY m.price DESC;
+```
+
+6. Wyszukiwanie użytkowników po imieniu, nazwisku lub emailu (LIKE):
+```sql
+SELECT *
+FROM [User]
+WHERE firstName LIKE '%szukana%'
+   OR lastName LIKE '%szukana%'
+   OR email LIKE '%szukana%';
+```
+
+7. Wyszukiwanie sprzętu po nazwie lub kategorii (LIKE):
+```sql
+SELECT *
+FROM Equipment
+WHERE name LIKE '%szukana%'
+   OR category LIKE '%szukana%';
+```
+
+8. Użytkownicy o roli TRAINER, ADMIN, RECEPTIONIST (IN + SUBQUERY):
+```sql
+SELECT *
+FROM [User]
+WHERE roleId IN (
+  SELECT id FROM Role WHERE name IN ('TRAINER', 'ADMIN', 'RECEPTIONIST')
+);
+```
+
+9. Użytkownicy z aktywnym członkostwem (EXISTS):
+```sql
+SELECT *
+FROM [User] u
+WHERE EXISTS (
+  SELECT 1 FROM UserMembership um WHERE um.userId = u.id AND um.active = 1
+);
+```
+
+10. Sprzęt droższy niż jakiekolwiek członkostwo (ANY):
+```sql
+SELECT *
+FROM Equipment
+WHERE purchasePrice > ANY (SELECT price FROM Membership);
+```
+
+11. Sprzęt droższy niż wszystkie członkostwa (ALL):
+```sql
+SELECT *
+FROM Equipment
+WHERE purchasePrice > ALL (SELECT price FROM Membership);
+```
+
+12. Lista wszystkich członkostw użytkownika:
+```sql
+SELECT m.*
+FROM Membership m
+JOIN UserMembership um ON um.membershipId = m.id
+WHERE um.userId = @userId;
+```
+
+13. Lista wszystkich przeglądów sprzętu:
+```sql
+SELECT *
+FROM Maintenance
+WHERE equipmentId = @equipmentId
+ORDER BY date DESC;
+```
+
+14. Lista wszystkich płatności użytkownika:
+```sql
+SELECT *
+FROM Payment
+WHERE userId = @userId
+ORDER BY paymentDate DESC;
+```
+
+15. Lista wszystkich klas prowadzonych przez trenera:
+```sql
+SELECT *
+FROM Class
+WHERE trainerId = @trainerId
+ORDER BY startTime DESC;
+```
 
 ## 8. Aplikacja kliencka – interfejs i funkcjonalności
 
