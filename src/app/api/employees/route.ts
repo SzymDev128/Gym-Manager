@@ -28,8 +28,24 @@ export async function GET(req: Request) {
         trainer: {
           include: {
             classes: true,
-            supervisor: true,
-            subordinates: true,
+            supervisor: {
+              include: {
+                employee: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+            subordinates: {
+              include: {
+                employee: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
           },
         },
         receptionist: true,

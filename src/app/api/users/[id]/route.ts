@@ -75,6 +75,7 @@ export async function PATCH(
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: Number(id) },
+      include: { employee: { include: { trainer: true, receptionist: true }, }, role: true },
     });
 
     if (!existingUser) {
@@ -115,9 +116,9 @@ export async function PATCH(
       ? await bcrypt.hash(password, 10)
       : undefined;
 
-    // Update user
     // Resolve roleId if roleName provided
     let roleIdToSet: number | undefined = undefined;
+    let targetRoleName: string | undefined = undefined;
     if (roleName) {
       const role = await prisma.role.findUnique({ where: { name: roleName } });
       if (!role) {
@@ -127,9 +128,11 @@ export async function PATCH(
         );
       }
       roleIdToSet = role.id;
+      targetRoleName = role.name;
     }
 
-    const updated = await prisma.user.update({
+    // Update user core fields first
+    const updatedBasic = await prisma.user.update({
       where: { id: Number(id) },
       data: {
         email: email || undefined,
@@ -146,6 +149,60 @@ export async function PATCH(
           : undefined,
       },
       include: {
+        employee: { include: { trainer: true, receptionist: true } },
+      },
+    });
+
+    // Auto-provision Employee/Trainer/Receptionist on role change
+    const becomingTrainer = targetRoleName === "TRAINER";
+    const becomingReceptionist = targetRoleName === "RECEPTIONIST";
+
+    let ensureEmployeeId: number | null = updatedBasic.employee?.id ?? null;
+
+    if ((becomingTrainer || becomingReceptionist) && !ensureEmployeeId) {
+      // Create minimal employee record with defaults
+      const createdEmp = await prisma.employee.create({
+        data: {
+          userId: updatedBasic.id,
+          hireDate: new Date(),
+          salary: 0,
+        },
+      });
+      ensureEmployeeId = createdEmp.id;
+    }
+
+    // If role is TRAINER ensure trainer subrecord exists
+    if (becomingTrainer && ensureEmployeeId) {
+      const existingTrainer = await prisma.trainer.findUnique({ where: { id: ensureEmployeeId } });
+      if (!existingTrainer) {
+        await prisma.trainer.create({
+          data: {
+            id: ensureEmployeeId,
+            specialization: "General",
+            experienceYears: 0,
+            supervisorId: null,
+          },
+        });
+      }
+    }
+
+    // If role is RECEPTIONIST ensure receptionist subrecord exists
+    if (becomingReceptionist && ensureEmployeeId) {
+      const existingReceptionist = await prisma.receptionist.findUnique({ where: { id: ensureEmployeeId } });
+      if (!existingReceptionist) {
+        await prisma.receptionist.create({
+          data: {
+            id: ensureEmployeeId,
+            shiftHours: "09:00-17:00",
+          },
+        });
+      }
+    }
+
+    // Return full user
+    const updated = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      include: {
         phoneNumbers: true,
         memberships: {
           include: { membership: true },
@@ -160,9 +217,13 @@ export async function PATCH(
       },
     });
 
+    if (!updated) {
+      return NextResponse.json({ error: "User not found after update" }, { status: 404 });
+    }
+
     // Remove password from response
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userWithoutPassword } = updated;
+    const { password: _, ...userWithoutPassword } = updated as unknown as { password?: string } & Record<string, unknown>;
 
     return NextResponse.json(userWithoutPassword);
   } catch (e: unknown) {
