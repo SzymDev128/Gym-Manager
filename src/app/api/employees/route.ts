@@ -13,6 +13,12 @@ export async function GET(req: Request) {
 
     if (role === "trainer") {
       where.trainer = { isNot: null };
+      // Only show trainers with TRAINER role (roleId = 4)
+      where.user = {
+        role: {
+          name: "TRAINER",
+        },
+      };
     } else if (role === "receptionist") {
       where.receptionist = { isNot: null };
     }
@@ -23,6 +29,7 @@ export async function GET(req: Request) {
         user: {
           include: {
             phoneNumbers: true,
+            role: true,
           },
         },
         trainer: {

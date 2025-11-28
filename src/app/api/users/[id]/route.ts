@@ -75,7 +75,10 @@ export async function PATCH(
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: Number(id) },
-      include: { employee: { include: { trainer: true, receptionist: true }, }, role: true },
+      include: {
+        employee: { include: { trainer: true, receptionist: true } },
+        role: true,
+      },
     });
 
     if (!existingUser) {
@@ -173,7 +176,9 @@ export async function PATCH(
 
     // If role is TRAINER ensure trainer subrecord exists
     if (becomingTrainer && ensureEmployeeId) {
-      const existingTrainer = await prisma.trainer.findUnique({ where: { id: ensureEmployeeId } });
+      const existingTrainer = await prisma.trainer.findUnique({
+        where: { id: ensureEmployeeId },
+      });
       if (!existingTrainer) {
         await prisma.trainer.create({
           data: {
@@ -188,7 +193,9 @@ export async function PATCH(
 
     // If role is RECEPTIONIST ensure receptionist subrecord exists
     if (becomingReceptionist && ensureEmployeeId) {
-      const existingReceptionist = await prisma.receptionist.findUnique({ where: { id: ensureEmployeeId } });
+      const existingReceptionist = await prisma.receptionist.findUnique({
+        where: { id: ensureEmployeeId },
+      });
       if (!existingReceptionist) {
         await prisma.receptionist.create({
           data: {
@@ -218,12 +225,17 @@ export async function PATCH(
     });
 
     if (!updated) {
-      return NextResponse.json({ error: "User not found after update" }, { status: 404 });
+      return NextResponse.json(
+        { error: "User not found after update" },
+        { status: 404 }
+      );
     }
 
     // Remove password from response
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userWithoutPassword } = updated as unknown as { password?: string } & Record<string, unknown>;
+    const { password: _, ...userWithoutPassword } = updated as unknown as {
+      password?: string;
+    } & Record<string, unknown>;
 
     return NextResponse.json(userWithoutPassword);
   } catch (e: unknown) {

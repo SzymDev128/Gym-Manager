@@ -24,6 +24,7 @@ const toaster = createToaster({
 const NAV_ITEMS = [
   { name: "Użytkownicy", href: "/users", icon: "👥", allowedRoles: [3, 4, 5] }, // RECEPTIONIST, TRAINER, ADMIN
   { name: "Sprzęt", href: "/equipment", icon: "🏋️", allowedRoles: [3, 4, 5] }, // RECEPTIONIST, TRAINER, ADMIN
+  { name: "Trenerzy", href: "/trainers", icon: "💪", allowedRoles: [3, 4, 5] }, // RECEPTIONIST, TRAINER, ADMIN
   {
     name: "Zajęcia",
     href: "/classes",
