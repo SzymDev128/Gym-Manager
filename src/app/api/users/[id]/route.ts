@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: Number(id) },
+      where: { userId: Number(id) },
       include: {
         phoneNumbers: true,
         memberships: {
@@ -74,7 +74,7 @@ export async function PATCH(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: Number(id) },
+      where: { userId: Number(id) },
       include: {
         employee: { include: { trainer: true, receptionist: true } },
         role: true,
@@ -130,13 +130,13 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      roleIdToSet = role.id;
+      roleIdToSet = role.roleId;
       targetRoleName = role.name;
     }
 
     // Update user core fields first
     const updatedBasic = await prisma.user.update({
-      where: { id: Number(id) },
+      where: { userId: Number(id) },
       data: {
         email: email || undefined,
         password: hashedPassword,
@@ -160,29 +160,31 @@ export async function PATCH(
     const becomingTrainer = targetRoleName === "TRAINER";
     const becomingReceptionist = targetRoleName === "RECEPTIONIST";
 
-    let ensureEmployeeId: number | null = updatedBasic.employee?.id ?? null;
+    let ensureEmployeeId: number | null =
+      updatedBasic.employee?.employeeId ?? null;
 
     if ((becomingTrainer || becomingReceptionist) && !ensureEmployeeId) {
       // Create minimal employee record with defaults
       const createdEmp = await prisma.employee.create({
         data: {
-          userId: updatedBasic.id,
+          userId: updatedBasic.userId,
           hireDate: new Date(),
           salary: 0,
         },
       });
-      ensureEmployeeId = createdEmp.id;
+      ensureEmployeeId = createdEmp.employeeId;
     }
 
     // If role is TRAINER ensure trainer subrecord exists
     if (becomingTrainer && ensureEmployeeId) {
       const existingTrainer = await prisma.trainer.findUnique({
-        where: { id: ensureEmployeeId },
+        where: { employeeId: ensureEmployeeId },
       });
       if (!existingTrainer) {
         await prisma.trainer.create({
           data: {
-            id: ensureEmployeeId,
+            trainerId: ensureEmployeeId,
+            employeeId: ensureEmployeeId,
             specialization: "General",
             experienceYears: 0,
             supervisorId: null,
@@ -194,12 +196,13 @@ export async function PATCH(
     // If role is RECEPTIONIST ensure receptionist subrecord exists
     if (becomingReceptionist && ensureEmployeeId) {
       const existingReceptionist = await prisma.receptionist.findUnique({
-        where: { id: ensureEmployeeId },
+        where: { employeeId: ensureEmployeeId },
       });
       if (!existingReceptionist) {
         await prisma.receptionist.create({
           data: {
-            id: ensureEmployeeId,
+            receptionistId: ensureEmployeeId,
+            employeeId: ensureEmployeeId,
             shiftHours: "09:00-17:00",
           },
         });
@@ -208,7 +211,7 @@ export async function PATCH(
 
     // Return full user
     const updated = await prisma.user.findUnique({
-      where: { id: Number(id) },
+      where: { userId: Number(id) },
       include: {
         phoneNumbers: true,
         memberships: {
@@ -257,7 +260,7 @@ export async function DELETE(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: Number(id) },
+      where: { userId: Number(id) },
     });
 
     if (!existingUser) {
@@ -266,7 +269,7 @@ export async function DELETE(
 
     // Delete user (cascade will handle related records)
     await prisma.user.delete({
-      where: { id: Number(id) },
+      where: { userId: Number(id) },
     });
 
     return NextResponse.json({ message: "User deleted successfully" });

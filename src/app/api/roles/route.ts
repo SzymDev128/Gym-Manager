@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     const roles = await prisma.role.findMany({
       where: names ? { name: { in: names } } : undefined,
-      orderBy: { id: "asc" },
+      orderBy: { roleId: "asc" },
     });
 
     return NextResponse.json(roles);

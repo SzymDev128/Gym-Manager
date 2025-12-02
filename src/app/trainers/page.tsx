@@ -25,17 +25,17 @@ interface TrainerRecord {
     email: string;
   };
   trainer: {
-    id: number;
+    trainerId: number;
     specialization: string;
     experienceYears: number;
     supervisorId: number | null;
     supervisor?: {
-      id: number;
+      trainerId: number;
       specialization: string;
       employee: { user: { firstName: string; lastName: string } };
     } | null;
     subordinates: {
-      id: number;
+      trainerId: number;
       specialization: string;
       employee: { user: { firstName: string; lastName: string } };
     }[];
@@ -207,7 +207,7 @@ export default function TrainersPage() {
                     transition="background 0.2s"
                   >
                     <Table.Cell color="gray.200" py={3} borderColor="gray.700">
-                      {t.id}
+                      {t.trainer?.trainerId ?? "-"}
                     </Table.Cell>
                     <Table.Cell color="gray.200" py={3} borderColor="gray.700">
                       {t.user.firstName} {t.user.lastName}

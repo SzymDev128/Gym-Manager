@@ -358,7 +358,10 @@ export default function ProjectPage() {
                       {equipment.latestMaintenance && (
                         <VStack align="end" gap={0}>
                           <Text fontSize="lg" fontWeight="bold" color="red.300">
-                            {equipment.latestMaintenance.cost.toFixed(2)} zł
+                            {equipment.latestMaintenance?.cost != null
+                              ? equipment.latestMaintenance.cost.toFixed(2)
+                              : "Brak"}{" "}
+                            zł
                           </Text>
                           <Text fontSize="xs" color="gray.400">
                             {new Date(
@@ -404,9 +407,12 @@ export default function ProjectPage() {
                   >
                     <Text color="blue.200" fontSize="sm" fontWeight="bold">
                       Średnia cena karnetu:{" "}
-                      {data.usersWithExpensiveMemberships[0]?.averagePrice.toFixed(
-                        2
-                      )}{" "}
+                      {data.usersWithExpensiveMemberships[0]?.averagePrice !=
+                      null
+                        ? data.usersWithExpensiveMemberships[0].averagePrice.toFixed(
+                            2
+                          )
+                        : "Brak"}{" "}
                       zł
                     </Text>
                   </Box>
@@ -443,13 +449,19 @@ export default function ProjectPage() {
                       </VStack>
                       <VStack align="end" gap={0}>
                         <Text fontSize="xl" fontWeight="bold" color="green.300">
-                          {item.membership.price.toFixed(2)} zł
+                          {item.membership.price != null
+                            ? item.membership.price.toFixed(2)
+                            : "Brak"}{" "}
+                          zł
                         </Text>
                         <Text fontSize="xs" color="gray.400">
                           +
-                          {(item.membership.price - item.averagePrice).toFixed(
-                            2
-                          )}{" "}
+                          {item.membership.price != null &&
+                          item.averagePrice != null
+                            ? (
+                                item.membership.price - item.averagePrice
+                              ).toFixed(2)
+                            : "Brak"}{" "}
                           zł powyżej średniej
                         </Text>
                       </VStack>
@@ -543,7 +555,10 @@ export default function ProjectPage() {
                             fontWeight="bold"
                             color="green.300"
                           >
-                            {user.employee.salary.toFixed(2)} zł
+                            {user.employee?.salary != null
+                              ? user.employee.salary.toFixed(2)
+                              : "Brak"}{" "}
+                            zł
                           </Text>
                           <Text fontSize="xs" color="gray.400">
                             pensja
@@ -647,10 +662,16 @@ export default function ProjectPage() {
                       </VStack>
                       <VStack align="end" gap={0}>
                         <Text fontSize="lg" fontWeight="bold" color="green.300">
-                          {equipment.purchasePrice.toFixed(2)} zł
+                          {equipment.purchasePrice != null
+                            ? equipment.purchasePrice.toFixed(2)
+                            : "Brak"}{" "}
+                          zł
                         </Text>
                         <Text fontSize="xs" color="gray.400">
-                          Min. karnet: {equipment.minMembershipPrice.toFixed(2)}{" "}
+                          Min. karnet:{" "}
+                          {equipment.minMembershipPrice != null
+                            ? equipment.minMembershipPrice.toFixed(2)
+                            : "Brak"}{" "}
                           zł
                         </Text>
                       </VStack>
@@ -706,10 +727,16 @@ export default function ProjectPage() {
                       </VStack>
                       <VStack align="end" gap={0}>
                         <Text fontSize="lg" fontWeight="bold" color="green.400">
-                          {equipment.purchasePrice.toFixed(2)} zł
+                          {equipment.purchasePrice != null
+                            ? equipment.purchasePrice.toFixed(2)
+                            : "Brak"}{" "}
+                          zł
                         </Text>
                         <Text fontSize="xs" color="gray.400">
-                          Max. karnet: {equipment.maxMembershipPrice.toFixed(2)}{" "}
+                          Max. karnet:{" "}
+                          {equipment.maxMembershipPrice != null
+                            ? equipment.maxMembershipPrice.toFixed(2)
+                            : "Brak"}{" "}
                           zł
                         </Text>
                       </VStack>

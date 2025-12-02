@@ -40,7 +40,7 @@ async function main() {
       password: adminPassword,
       firstName: "Admin",
       lastName: "Użytkownik",
-      roleId: adminRole.id,
+      roleId: adminRole.roleId,
     },
   });
 

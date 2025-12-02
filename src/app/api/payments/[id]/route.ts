@@ -14,8 +14,8 @@ export async function GET(
     }
 
     const item = await prisma.payment.findUnique({
-      where: { id },
-      include: { member: true },
+      where: { paymentId: id },
+      include: { userMembership: true },
     });
 
     if (!item)
@@ -47,35 +47,35 @@ export async function PATCH(
     const { memberId, amount, method, date } = body || {};
 
     // Validate member existence if changing memberId
-    let memberIdNum: number | undefined = undefined;
+    let userMembershipIdNum: number | undefined = undefined;
     if (memberId !== undefined) {
-      memberIdNum = Number(memberId);
-      if (Number.isNaN(memberIdNum)) {
+      userMembershipIdNum = Number(memberId);
+      if (Number.isNaN(userMembershipIdNum)) {
         return NextResponse.json(
           { error: "memberId must be numeric" },
           { status: 400 }
         );
       }
-      const member = await prisma.member.findUnique({
-        where: { id: memberIdNum },
+      const userMembership = await prisma.userMembership.findUnique({
+        where: { userMembershipId: userMembershipIdNum },
       });
-      if (!member) {
+      if (!userMembership) {
         return NextResponse.json(
-          { error: "Member not found" },
+          { error: "Membership not found" },
           { status: 404 }
         );
       }
     }
 
     const updated = await prisma.payment.update({
-      where: { id },
+      where: { paymentId: id },
       data: {
-        memberId: memberIdNum,
+        userMembershipId: userMembershipIdNum,
         amount: amount !== undefined ? Number(amount) : undefined,
         method,
         date: date ? new Date(date) : undefined,
       },
-      include: { member: true },
+      include: { userMembership: true },
     });
 
     return NextResponse.json(updated);
@@ -100,7 +100,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    await prisma.payment.delete({ where: { id } });
+    await prisma.payment.delete({ where: { paymentId: id } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

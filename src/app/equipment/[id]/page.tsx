@@ -28,7 +28,7 @@ import {
 import useSWR from "swr";
 
 interface Equipment {
-  id: number;
+  equipmentId: number;
   name: string;
   category: string;
   condition: string;
@@ -37,7 +37,7 @@ interface Equipment {
 }
 
 interface Maintenance {
-  id: number;
+  maintenanceId: number;
   equipmentId: number;
   date: string;
   cost: number;
@@ -144,11 +144,14 @@ export default function EquipmentDetailPage() {
     if (!selectedMaintenance) return;
 
     try {
-      await axios.patch(`/api/maintenance/${selectedMaintenance.id}`, {
-        date: maintenanceData.date,
-        cost: Number(maintenanceData.cost),
-        description: maintenanceData.description || null,
-      });
+      await axios.patch(
+        `/api/maintenance/${selectedMaintenance.maintenanceId}`,
+        {
+          date: maintenanceData.date,
+          cost: Number(maintenanceData.cost),
+          description: maintenanceData.description || null,
+        }
+      );
       toaster.create({
         title: "Zaktualizowano",
         description: "Naprawa została zaktualizowana",
@@ -172,7 +175,7 @@ export default function EquipmentDetailPage() {
 
   const handleDeleteMaintenance = async (maintenance: Maintenance) => {
     try {
-      await axios.delete(`/api/maintenance/${maintenance.id}`);
+      await axios.delete(`/api/maintenance/${maintenance.maintenanceId}`);
       toaster.create({
         title: "Usunięto",
         description: "Naprawa została usunięta",
@@ -194,7 +197,7 @@ export default function EquipmentDetailPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const maintenanceColumns: ColumnDef<Maintenance, any>[] = [
-    maintenanceColumnHelper.accessor("id", {
+    maintenanceColumnHelper.accessor("maintenanceId", {
       header: "ID",
       cell: (i) => i.getValue(),
     }),
@@ -204,7 +207,8 @@ export default function EquipmentDetailPage() {
     }),
     maintenanceColumnHelper.accessor("cost", {
       header: "Koszt",
-      cell: (i) => `${i.getValue().toFixed(2)} zł`,
+      cell: (i) =>
+        i.getValue() != null ? `${i.getValue().toFixed(2)} zł` : "Brak",
     }),
     maintenanceColumnHelper.accessor("description", {
       header: "Opis",
@@ -340,7 +344,7 @@ export default function EquipmentDetailPage() {
                 </Heading>
                 <Box display="flex" flexDirection="column" gap={2}>
                   <Text color="gray.200">
-                    <strong>ID:</strong> {equipment.id}
+                    <strong>ID:</strong> {equipment.equipmentId}
                   </Text>
                   <Text color="gray.200">
                     <strong>Kategoria:</strong> {equipment.category}
@@ -359,7 +363,10 @@ export default function EquipmentDetailPage() {
                   </Text>
                   <Text color="gray.200">
                     <strong>Cena zakupu:</strong>{" "}
-                    {equipment.purchasePrice.toFixed(2)} zł
+                    {equipment.purchasePrice != null
+                      ? equipment.purchasePrice.toFixed(2)
+                      : "Brak"}{" "}
+                    zł
                   </Text>
                   <Text color="gray.200">
                     <strong>Ostatnia naprawa:</strong>{" "}

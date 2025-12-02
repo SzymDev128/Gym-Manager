@@ -5,19 +5,19 @@ import prisma from "@/lib/db";
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const memberIdParam = url.searchParams.get("memberId");
-    const where = memberIdParam
-      ? { memberId: Number(memberIdParam) }
+    const userMembershipIdParam = url.searchParams.get("memberId");
+    const where = userMembershipIdParam
+      ? { userMembershipId: Number(userMembershipIdParam) }
       : undefined;
 
-    if (where && Number.isNaN(where.memberId)) {
+    if (where && Number.isNaN(where.userMembershipId)) {
       return NextResponse.json({ error: "Invalid memberId" }, { status: 400 });
     }
 
     const items = await prisma.payment.findMany({
       where,
-      include: { member: true },
-      orderBy: { id: "desc" },
+      include: { userMembership: true },
+      orderBy: { paymentId: "desc" },
     });
     return NextResponse.json(items);
   } catch (e: unknown) {
@@ -42,31 +42,34 @@ export async function POST(req: Request) {
       );
     }
 
-    const memberIdNum = Number(memberId);
+    const userMembershipIdNum = Number(memberId);
     const amountNum = Number(amount);
-    if (Number.isNaN(memberIdNum) || Number.isNaN(amountNum)) {
+    if (Number.isNaN(userMembershipIdNum) || Number.isNaN(amountNum)) {
       return NextResponse.json(
         { error: "memberId and amount must be numeric" },
         { status: 400 }
       );
     }
 
-    // Ensure member exists for clearer error
-    const member = await prisma.member.findUnique({
-      where: { id: memberIdNum },
+    // Ensure userMembership exists for clearer error
+    const userMembership = await prisma.userMembership.findUnique({
+      where: { userMembershipId: userMembershipIdNum },
     });
-    if (!member) {
-      return NextResponse.json({ error: "Member not found" }, { status: 404 });
+    if (!userMembership) {
+      return NextResponse.json(
+        { error: "Membership not found" },
+        { status: 404 }
+      );
     }
 
     const created = await prisma.payment.create({
       data: {
-        memberId: memberIdNum,
+        userMembershipId: userMembershipIdNum,
         amount: amountNum,
         method,
         date: date ? new Date(date) : undefined,
       },
-      include: { member: true },
+      include: { userMembership: true },
     });
 
     return NextResponse.json(created, { status: 201 });

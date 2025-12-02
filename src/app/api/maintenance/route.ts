@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // Optional existence check for clearer error
     const equipment = await prisma.equipment.findUnique({
-      where: { id: Number(equipmentId) },
+      where: { equipmentId: Number(equipmentId) },
     });
     if (!equipment) {
       return NextResponse.json(

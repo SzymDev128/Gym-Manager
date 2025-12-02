@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const item = await prisma.class.findUnique({
-      where: { id },
+      where: { classId: id },
       include: { trainer: { include: { employee: true } } },
     });
 
@@ -49,7 +49,7 @@ export async function PATCH(
     // If trainerId provided, validate existence; allow null to unassign
     if (trainerId !== undefined && trainerId !== null) {
       const trainer = await prisma.trainer.findUnique({
-        where: { id: Number(trainerId) },
+        where: { trainerId: Number(trainerId) },
       });
       if (!trainer) {
         return NextResponse.json(
@@ -60,7 +60,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.class.update({
-      where: { id },
+      where: { classId: id },
       data: {
         name,
         startTime: startTime ? new Date(startTime) : undefined,
@@ -98,7 +98,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    await prisma.class.delete({ where: { id } });
+    await prisma.class.delete({ where: { classId: id } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

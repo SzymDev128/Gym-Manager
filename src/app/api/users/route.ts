@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const roleName = searchParams.get("role");
     const search = searchParams.get("search");
-    const sortBy = searchParams.get("sortBy") || "id";
+    const sortBy = searchParams.get("sortBy") || "userId";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
     // Build where clause
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
           { status: 400 }
         );
       }
-      where.roleId = role.id;
+      where.roleId = role.roleId;
     }
 
     // Filter by search query (firstName, lastName, email)
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     // Build orderBy clause
     const orderBy: Record<string, string> = {};
     const validSortFields = [
-      "id",
+      "userId",
       "firstName",
       "lastName",
       "email",
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     if (validSortFields.includes(sortBy)) {
       orderBy[sortBy] = sortOrder === "asc" ? "asc" : "desc";
     } else {
-      orderBy.id = "desc";
+      orderBy.userId = "desc";
     }
 
     const users = await prisma.user.findMany({

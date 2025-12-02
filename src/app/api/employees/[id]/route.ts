@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const employee = await prisma.employee.findUnique({
-      where: { id },
+      where: { employeeId: id },
       include: {
         user: {
           include: {
@@ -84,7 +84,7 @@ export async function PATCH(
       // Validate supervisorId if provided and not null
       if (supervisorId !== undefined && supervisorId !== null) {
         const supervisorExists = await prisma.trainer.findUnique({
-          where: { id: Number(supervisorId) },
+          where: { trainerId: Number(supervisorId) },
         });
         if (!supervisorExists) {
           return NextResponse.json(
@@ -97,7 +97,7 @@ export async function PATCH(
       }
 
       const employee = await prisma.employee.findUnique({
-        where: { id },
+        where: { employeeId: id },
         include: { trainer: true },
       });
 
@@ -133,7 +133,7 @@ export async function PATCH(
     // Check if employee has receptionist role and update if shiftHours provided
     if (shiftHours !== undefined) {
       const employee = await prisma.employee.findUnique({
-        where: { id },
+        where: { employeeId: id },
         include: { receptionist: true },
       });
 
@@ -155,7 +155,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.employee.update({
-      where: { id },
+      where: { employeeId: id },
       data: updateData,
       include: {
         user: {
@@ -197,32 +197,49 @@ export async function DELETE(
     }
 
     // Load employee to get userId before deleting
-    const employee = await prisma.employee.findUnique({ where: { id } });
+    const employee = await prisma.employee.findUnique({
+      where: { employeeId: id },
+    });
     if (!employee) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    await prisma.employee.delete({ where: { id } });
+    await prisma.employee.delete({ where: { employeeId: id } });
 
     // After termination, adjust user role:
     // - If user had TRAINER/RECEPTIONIST role, demote to MEMBER if they have an active membership; otherwise to USER.
-    const [user, hasActiveMembership, memberRole, userRole] = await Promise.all([
-      prisma.user.findUnique({ where: { id: employee.userId }, include: { role: true } }),
-      prisma.userMembership.findFirst({ where: { userId: employee.userId, active: true } }),
-      prisma.role.findUnique({ where: { name: "MEMBER" } }),
-      prisma.role.findUnique({ where: { name: "USER" } }),
-    ]);
+    const [user, hasActiveMembership, memberRole, userRole] = await Promise.all(
+      [
+        prisma.user.findUnique({
+          where: { userId: employee.userId },
+          include: { role: true },
+        }),
+        prisma.userMembership.findFirst({
+          where: { userId: employee.userId, active: true },
+        }),
+        prisma.role.findUnique({ where: { name: "MEMBER" } }),
+        prisma.role.findUnique({ where: { name: "USER" } }),
+      ]
+    );
 
     if (
       user &&
       (user.role?.name === "TRAINER" || user.role?.name === "RECEPTIONIST") &&
-      (memberRole && userRole)
+      memberRole &&
+      userRole
     ) {
-      const newRoleId = hasActiveMembership ? memberRole.id : userRole.id;
-      await prisma.user.update({ where: { id: user.id }, data: { roleId: newRoleId } });
+      const newRoleId = hasActiveMembership
+        ? memberRole.roleId
+        : userRole.roleId;
+      await prisma.user.update({
+        where: { userId: user.userId },
+        data: { roleId: newRoleId },
+      });
     }
 
-    return NextResponse.json({ message: "Employment terminated and role adjusted if necessary" });
+    return NextResponse.json({
+      message: "Employment terminated and role adjusted if necessary",
+    });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(

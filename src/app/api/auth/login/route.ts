@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Set authentication cookie
-    response.cookies.set("auth-token", user.id.toString(), {
+    response.cookies.set("auth-token", user.userId.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

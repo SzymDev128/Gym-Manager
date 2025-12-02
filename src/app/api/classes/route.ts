@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     const items = await prisma.class.findMany({
       where,
       include: { trainer: { include: { employee: true } } },
-      orderBy: { id: "desc" },
+      orderBy: { classId: "desc" },
     });
     return NextResponse.json(items);
   } catch (e: unknown) {
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     // If trainerId provided, ensure trainer exists
     if (trainerId !== undefined && trainerId !== null) {
       const trainer = await prisma.trainer.findUnique({
-        where: { id: Number(trainerId) },
+        where: { trainerId: Number(trainerId) },
       });
       if (!trainer) {
         return NextResponse.json(

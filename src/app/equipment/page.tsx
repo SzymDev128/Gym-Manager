@@ -27,7 +27,7 @@ import {
 import useSWR from "swr";
 
 interface Equipment {
-  id: number;
+  equipmentId: number;
   name: string;
   category: string;
   condition: string;
@@ -67,7 +67,7 @@ export default function EquipmentPage() {
 
   const handleDelete = async (eq: Equipment) => {
     try {
-      await axios.delete(`/api/equipment/${eq.id}`);
+      await axios.delete(`/api/equipment/${eq.equipmentId}`);
       toaster.create({
         title: "Usunięto",
         description: `Sprzęt "${eq.name}" został usunięty`,
@@ -89,7 +89,7 @@ export default function EquipmentPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columns: ColumnDef<Equipment, any>[] = [
-    columnHelper.accessor("id", {
+    columnHelper.accessor("equipmentId", {
       header: "ID",
       cell: (i) => i.getValue(),
       enableSorting: true,
@@ -138,7 +138,8 @@ export default function EquipmentPage() {
     }),
     columnHelper.accessor("purchasePrice", {
       header: "Cena zakupu",
-      cell: (i) => `${i.getValue().toFixed(2)} zł`,
+      cell: (i) =>
+        i.getValue() != null ? `${i.getValue().toFixed(2)} zł` : "Brak",
       enableSorting: true,
     }),
     columnHelper.display({
@@ -154,7 +155,9 @@ export default function EquipmentPage() {
               bg="purple.600"
               color="white"
               _hover={{ bg: "purple.400" }}
-              onClick={() => (window.location.href = `/equipment/${eq.id}`)}
+              onClick={() =>
+                (window.location.href = `/equipment/${eq?.equipmentId}`)
+              }
             >
               Szczegóły
             </Button>

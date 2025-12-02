@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
     // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+      where: { userId: Number(userId) },
       include: { role: true },
     });
 
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     // Check if membership plan exists
     const membership = await prisma.membership.findUnique({
-      where: { id: Number(membershipId) },
+      where: { membershipId: Number(membershipId) },
     });
 
     if (!membership) {
@@ -122,13 +122,13 @@ export async function POST(req: Request) {
     // If user already has an employee record, keep their employee role
     const employee = await prisma.employee.findUnique({
       where: { userId: Number(userId) },
-      select: { id: true, trainer: true, receptionist: true },
+      select: { employeeId: true, trainer: true, receptionist: true },
     });
 
     if (!employee && user.role?.name === "USER") {
       await prisma.user.update({
-        where: { id: Number(userId) },
-        data: { roleId: memberRole.id },
+        where: { userId: Number(userId) },
+        data: { roleId: memberRole.roleId },
       });
     }
 

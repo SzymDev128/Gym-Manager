@@ -38,7 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsed = JSON.parse(storedUser);
+      // Map userId to id if present
+      if (parsed.userId && !parsed.id) {
+        parsed.id = parsed.userId;
+      }
+      setUser(parsed);
       setIsLoggedIn(true);
     }
     setIsLoading(false);
@@ -51,11 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      setUser(response.data.user);
+      const user = response.data.user;
+      // Map userId to id if present
+      if (user.userId && !user.id) {
+        user.id = user.userId;
+      }
+      setUser(user);
       setIsLoggedIn(true);
 
       // Save to localStorage
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+      localStorage.setItem("user", JSON.stringify(user));
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw new Error(

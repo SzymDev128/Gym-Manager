@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const condition = searchParams.get("condition");
-    const sortBy = searchParams.get("sortBy") || "id";
+    const sortBy = searchParams.get("sortBy") || "equipmentId";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
     // Build where clause
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     // Build orderBy clause
     const orderBy: Record<string, string> = {};
     const validSortFields = [
-      "id",
+      "equipmentId",
       "name",
       "category",
       "condition",
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     if (validSortFields.includes(sortBy)) {
       orderBy[sortBy] = sortOrder === "asc" ? "asc" : "desc";
     } else {
-      orderBy.id = "desc";
+      orderBy.equipmentId = "desc";
     }
 
     const equipment = await prisma.equipment.findMany({

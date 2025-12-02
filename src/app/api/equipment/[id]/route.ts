@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const equipment = await prisma.equipment.findUnique({
-      where: { id },
+      where: { equipmentId: id },
       include: { maintenance: true },
     });
 
@@ -48,7 +48,7 @@ export async function PATCH(
       body || {};
 
     const updated = await prisma.equipment.update({
-      where: { id },
+      where: { equipmentId: id },
       data: {
         name,
         category,
@@ -87,7 +87,7 @@ export async function DELETE(
     await prisma.$transaction(async (tx) => {
       // Remove dependent maintenance records first (no cascade defined in schema)
       await tx.maintenance.deleteMany({ where: { equipmentId: id } });
-      await tx.equipment.delete({ where: { id } });
+      await tx.equipment.delete({ where: { equipmentId: id } });
     });
 
     return NextResponse.json({ ok: true });

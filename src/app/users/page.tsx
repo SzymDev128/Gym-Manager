@@ -27,6 +27,7 @@ import { RoleGuard } from "@/components/RoleGuard";
 
 interface User {
   id: number;
+  userId: number;
   email: string;
   firstName: string;
   lastName: string;
@@ -83,7 +84,7 @@ export default function UsersPage() {
 
   const handleDelete = async (user: User) => {
     try {
-      await axios.delete(`/api/users/${user.id}`);
+      await axios.delete(`/api/users/${user.userId}`);
       toaster.create({
         title: "Usunięto",
         description: `Użytkownik ${user.firstName} ${user.lastName} został usunięty`,
@@ -119,7 +120,7 @@ export default function UsersPage() {
 
     try {
       const response = await axios.patch(
-        `/api/users/${selectedUser.id}`,
+        `/api/users/${selectedUser.userId}`,
         updatedUser
       );
       console.log("PATCH response", response.data);
@@ -147,7 +148,7 @@ export default function UsersPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columns: ColumnDef<User, any>[] = [
-    columnHelper.accessor("id", {
+    columnHelper.accessor("userId", {
       header: "ID",
       cell: (info) => info.getValue(),
       enableSorting: true,
@@ -205,7 +206,7 @@ export default function UsersPage() {
               bg="blue.600"
               color="white"
               _hover={{ bg: "blue.400" }}
-              onClick={() => (window.location.href = `/users/${user.id}`)}
+              onClick={() => (window.location.href = `/users/${user.userId}`)}
             >
               Szczegóły
             </Button>

@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const item = await prisma.maintenance.findUnique({
-      where: { id },
+      where: { maintenanceId: id },
       include: { equipment: true },
     });
 
@@ -49,7 +49,7 @@ export async function PATCH(
     // If equipmentId is provided, ensure new equipment exists
     if (equipmentId !== undefined) {
       const exists = await prisma.equipment.findUnique({
-        where: { id: Number(equipmentId) },
+        where: { equipmentId: Number(equipmentId) },
       });
       if (!exists) {
         return NextResponse.json(
@@ -60,7 +60,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.maintenance.update({
-      where: { id },
+      where: { maintenanceId: id },
       data: {
         equipmentId:
           equipmentId !== undefined ? Number(equipmentId) : undefined,
@@ -93,7 +93,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    await prisma.maintenance.delete({ where: { id } });
+    await prisma.maintenance.delete({ where: { maintenanceId: id } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

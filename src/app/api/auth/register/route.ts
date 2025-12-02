@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         firstName,
         lastName,
         birthDate: birthDate ? new Date(birthDate) : null,
-        roleId: userRole.id,
+        roleId: userRole.roleId,
         phoneNumbers: phoneNumbers
           ? {
               create: phoneNumbers.map((num: string) => ({ number: num })),

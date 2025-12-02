@@ -8,33 +8,33 @@ export async function GET() {
     const usersByRole = await prisma.user.groupBy({
       by: ["roleId"],
       _count: {
-        id: true,
+        userId: true,
       },
       orderBy: {
         _count: {
-          id: "desc",
+          userId: "desc",
         },
       },
     });
 
     // Get role names
     const roles = await prisma.role.findMany();
-    const roleMap = new Map(roles.map((r) => [r.id, r.name]));
+    const roleMap = new Map(roles.map((r) => [r.roleId, r.name]));
 
     const usersByRoleWithNames = usersByRole.map((item) => ({
       roleId: item.roleId,
       roleName: roleMap.get(item.roleId) || "Unknown",
-      count: item._count.id,
+      count: item._count.userId,
     }));
 
     // 2. GROUP BY + HAVING - Users with more than 5 check-ins
     const usersWithManyCheckIns = await prisma.checkIn.groupBy({
       by: ["userId"],
       _count: {
-        id: true,
+        checkInId: true,
       },
       having: {
-        id: {
+        checkInId: {
           _count: {
             gt: 5,
           },
@@ -42,7 +42,7 @@ export async function GET() {
       },
       orderBy: {
         _count: {
-          id: "desc",
+          checkInId: "desc",
         },
       },
     });
@@ -50,20 +50,20 @@ export async function GET() {
     // Get user details
     const userIds = usersWithManyCheckIns.map((item) => item.userId);
     const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
+      where: { userId: { in: userIds } },
       select: {
-        id: true,
+        userId: true,
         firstName: true,
         lastName: true,
         email: true,
       },
     });
-    const userMap = new Map(users.map((u) => [u.id, u]));
+    const userMap = new Map(users.map((u) => [u.userId, u]));
 
     const usersWithManyCheckInsDetails = usersWithManyCheckIns.map((item) => ({
       userId: item.userId,
       user: userMap.get(item.userId),
-      checkInCount: item._count.id,
+      checkInCount: item._count.checkInId,
     }));
 
     // 3. LEFT JOIN - Users without any check-ins
@@ -74,7 +74,7 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        userId: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -91,7 +91,7 @@ export async function GET() {
     });
 
     const usersWithoutCheckInsFormatted = usersWithoutCheckIns.map((user) => ({
-      id: user.id,
+      userId: user.userId,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
@@ -109,7 +109,7 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        equipmentId: true,
         name: true,
         category: true,
         condition: true,
@@ -119,7 +119,7 @@ export async function GET() {
           },
           take: 1,
           select: {
-            id: true,
+            maintenanceId: true,
             date: true,
             cost: true,
             description: true,
@@ -131,7 +131,7 @@ export async function GET() {
 
     const equipmentWithLatestMaintenanceFormatted =
       equipmentWithLatestMaintenance.map((equipment) => ({
-        id: equipment.id,
+        equipmentId: equipment.equipmentId,
         name: equipment.name,
         category: equipment.category,
         condition: equipment.condition,
@@ -164,10 +164,10 @@ export async function GET() {
         active: true,
       },
       select: {
-        id: true,
+        userMembershipId: true,
         user: {
           select: {
-            id: true,
+            userId: true,
             firstName: true,
             lastName: true,
             email: true,
@@ -175,7 +175,7 @@ export async function GET() {
         },
         membership: {
           select: {
-            id: true,
+            membershipId: true,
             name: true,
             price: true,
             durationMonths: true,
@@ -194,7 +194,7 @@ export async function GET() {
 
     const usersWithExpensiveMembershipsFormatted =
       usersWithExpensiveMemberships.map((um) => ({
-        id: um.id,
+        userMembershipId: um.userMembershipId,
         user: um.user,
         membership: um.membership,
         startDate: um.startDate,
@@ -214,12 +214,12 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        roleId: true,
         name: true,
       },
     });
 
-    const staffRoleIds = staffRoles.map((role) => role.id);
+    const staffRoleIds = staffRoles.map((role) => role.roleId);
 
     // Then, get users with those role IDs (using IN)
     const staffUsers = await prisma.user.findMany({
@@ -229,7 +229,7 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        userId: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -237,7 +237,7 @@ export async function GET() {
         createdAt: true,
         employee: {
           select: {
-            id: true,
+            employeeId: true,
             hireDate: true,
             salary: true,
             trainer: {
@@ -260,10 +260,10 @@ export async function GET() {
       take: 20,
     });
 
-    const staffRoleMap = new Map(staffRoles.map((r) => [r.id, r.name]));
+    const staffRoleMap = new Map(staffRoles.map((r) => [r.roleId, r.name]));
 
     const staffUsersFormatted = staffUsers.map((user) => ({
-      id: user.id,
+      userId: user.userId,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
@@ -284,7 +284,7 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        userId: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -297,7 +297,7 @@ export async function GET() {
 
     const usersWithActiveMembershipsFormatted = usersWithActiveMemberships.map(
       (user) => ({
-        id: user.id,
+        userId: user.userId,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -322,7 +322,7 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        equipmentId: true,
         name: true,
         category: true,
         purchasePrice: true,
@@ -336,7 +336,7 @@ export async function GET() {
 
     const equipmentGreaterThanAnyFormatted = equipmentGreaterThanAny.map(
       (e) => ({
-        id: e.id,
+        equipmentId: e.equipmentId,
         name: e.name,
         category: e.category,
         purchasePrice: e.purchasePrice,
@@ -356,7 +356,7 @@ export async function GET() {
         },
       },
       select: {
-        id: true,
+        equipmentId: true,
         name: true,
         category: true,
         purchasePrice: true,
@@ -370,7 +370,7 @@ export async function GET() {
 
     const equipmentGreaterThanAllFormatted = equipmentGreaterThanAll.map(
       (e) => ({
-        id: e.id,
+        equipmentId: e.equipmentId,
         name: e.name,
         category: e.category,
         purchasePrice: e.purchasePrice,

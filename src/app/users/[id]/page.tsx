@@ -234,8 +234,8 @@ export default function UserDetailPage() {
                     </Text>
                     {user.phoneNumbers && user.phoneNumbers.length > 0 ? (
                       <Box display="flex" flexDirection="column" gap={1} pl={4}>
-                        {user.phoneNumbers.map((phone) => (
-                          <Text key={phone.id} color="gray.300">
+                        {user.phoneNumbers.map((phone, idx) => (
+                          <Text key={phone.id ?? idx} color="gray.300">
                             • {phone.number}
                           </Text>
                         ))}
@@ -361,7 +361,7 @@ export default function UserDetailPage() {
 
                         return (
                           <Table.Row
-                            key={checkIn.id}
+                            key={checkIn.id ?? index}
                             bg={index % 2 === 0 ? "gray.800" : "gray.700"}
                           >
                             <Table.Cell color="gray.100" borderColor="gray.500">

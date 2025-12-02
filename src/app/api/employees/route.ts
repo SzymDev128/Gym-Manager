@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
     // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+      where: { userId: Number(userId) },
     });
 
     if (!user) {
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
       // Validate supervisorId if provided
       if (supervisorId !== undefined && supervisorId !== null) {
         const supervisorExists = await prisma.trainer.findUnique({
-          where: { id: Number(supervisorId) },
+          where: { trainerId: Number(supervisorId) },
         });
         if (!supervisorExists) {
           return NextResponse.json(
@@ -147,8 +147,10 @@ export async function POST(req: Request) {
         }
       }
 
+      // Trainer: set employeeId
       createData.trainer = {
         create: {
+          employeeId: undefined, // will be set after employee is created
           specialization,
           experienceYears: Number(experienceYears),
           supervisorId: supervisorId ? Number(supervisorId) : null,
@@ -158,8 +160,10 @@ export async function POST(req: Request) {
 
     // Add receptionist role if shiftHours provided
     if (shiftHours) {
+      // Receptionist: set employeeId
       createData.receptionist = {
         create: {
+          employeeId: undefined, // will be set after employee is created
           shiftHours,
         },
       };
@@ -185,8 +189,38 @@ export async function POST(req: Request) {
       );
     }
 
-    const created = await prisma.employee.create({
+    // Create employee first
+    const createdEmployee = await prisma.employee.create({
       data: createData,
+      include: {
+        user: {
+          include: {
+            phoneNumbers: true,
+          },
+        },
+        trainer: true,
+        receptionist: true,
+      },
+    });
+
+    // If trainer, create trainer record with employeeId
+    if (specialization) {
+      await prisma.trainer.update({
+        where: { employeeId: createdEmployee.employeeId },
+        data: { employeeId: createdEmployee.employeeId },
+      });
+    }
+    // If receptionist, create receptionist record with employeeId
+    if (shiftHours) {
+      await prisma.receptionist.update({
+        where: { employeeId: createdEmployee.employeeId },
+        data: { employeeId: createdEmployee.employeeId },
+      });
+    }
+
+    // Fetch with full include
+    const created = await prisma.employee.findUnique({
+      where: { employeeId: createdEmployee.employeeId },
       include: {
         user: {
           include: {
@@ -206,8 +240,8 @@ export async function POST(req: Request) {
 
     // Update user role
     await prisma.user.update({
-      where: { id: Number(userId) },
-      data: { roleId: userRole.id },
+      where: { userId: Number(userId) },
+      data: { roleId: userRole.roleId },
     });
 
     return NextResponse.json(created, { status: 201 });

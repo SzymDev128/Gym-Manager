@@ -21,7 +21,7 @@ export async function GET(
     }
 
     const member = await prisma.userMembership.findUnique({
-      where: { id },
+      where: { userMembershipId: id },
       include: {
         user: {
           include: {
@@ -63,7 +63,9 @@ export async function PATCH(
     const { membershipId, startDate, active } = body || {};
 
     // Load existing user membership
-    const existing = await prisma.userMembership.findUnique({ where: { id } });
+    const existing = await prisma.userMembership.findUnique({
+      where: { userMembershipId: id },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -75,7 +77,7 @@ export async function PATCH(
     if (membershipId || startDate) {
       const planId = Number(membershipId ?? existing.membershipId);
       const plan = await prisma.membership.findUnique({
-        where: { id: planId },
+        where: { membershipId: planId },
       });
       if (!plan) {
         return NextResponse.json(
@@ -90,7 +92,11 @@ export async function PATCH(
     // If toggling active to true, enforce single active membership per user
     if (active === true) {
       const otherActive = await prisma.userMembership.findFirst({
-        where: { userId: existing.userId, active: true, NOT: { id } },
+        where: {
+          userId: existing.userId,
+          active: true,
+          NOT: { userMembershipId: id },
+        },
       });
       if (otherActive) {
         return NextResponse.json(
@@ -101,7 +107,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.userMembership.update({
-      where: { id },
+      where: { userMembershipId: id },
       data: {
         membershipId: membershipId ? Number(membershipId) : undefined,
         startDate: newStart,
@@ -128,15 +134,15 @@ export async function PATCH(
         const [employee, user, userRole] = await Promise.all([
           prisma.employee.findUnique({ where: { userId: updated.userId } }),
           prisma.user.findUnique({
-            where: { id: updated.userId },
+            where: { userId: updated.userId },
             include: { role: true },
           }),
           prisma.role.findUnique({ where: { name: "USER" } }),
         ]);
         if (!employee && user?.role?.name === "MEMBER" && userRole) {
           await prisma.user.update({
-            where: { id: updated.userId },
-            data: { roleId: userRole.id },
+            where: { userId: updated.userId },
+            data: { roleId: userRole.roleId },
           });
         }
       }
@@ -165,13 +171,15 @@ export async function DELETE(
     }
 
     // Deactivate membership instead of deleting (preserve history)
-    const existing = await prisma.userMembership.findUnique({ where: { id } });
+    const existing = await prisma.userMembership.findUnique({
+      where: { userMembershipId: id },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     await prisma.userMembership.update({
-      where: { id },
+      where: { userMembershipId: id },
       data: { active: false, endDate: existing.endDate ?? new Date() },
     });
 
@@ -184,7 +192,7 @@ export async function DELETE(
       const [employee, user, userRole] = await Promise.all([
         prisma.employee.findUnique({ where: { userId: existing.userId } }),
         prisma.user.findUnique({
-          where: { id: existing.userId },
+          where: { userId: existing.userId },
           include: { role: true },
         }),
         prisma.role.findUnique({ where: { name: "USER" } }),
@@ -192,8 +200,8 @@ export async function DELETE(
 
       if (!employee && user?.role?.name === "MEMBER" && userRole) {
         await prisma.user.update({
-          where: { id: existing.userId },
-          data: { roleId: userRole.id },
+          where: { userId: existing.userId },
+          data: { roleId: userRole.roleId },
         });
       }
     }

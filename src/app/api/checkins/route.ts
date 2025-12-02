@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     // Ensure user exists
     const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+      where: { userId: Number(userId) },
     });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -96,7 +96,7 @@ export async function PATCH(req: Request) {
     }
 
     const updated = await prisma.checkIn.update({
-      where: { id: lastCheckin.id },
+      where: { checkInId: lastCheckin.checkInId },
       data: { checkOutTime: new Date() },
       include: { user: true },
     });
