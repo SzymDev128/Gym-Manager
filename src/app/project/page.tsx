@@ -179,9 +179,9 @@ export default function ProjectPage() {
             </Card.Header>
             <Card.Body>
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
-                {data.usersByRole.map((item) => (
+                {data.usersByRole.map((item, idx) => (
                   <Box
-                    key={item.roleId}
+                    key={item.roleId ?? idx}
                     p={4}
                     borderWidth="1px"
                     borderRadius="md"
@@ -221,9 +221,9 @@ export default function ProjectPage() {
                 </Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.usersWithManyCheckIns.map((item) => (
+                  {data.usersWithManyCheckIns.map((item, idx) => (
                     <HStack
-                      key={item.userId}
+                      key={item.userId ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -268,9 +268,9 @@ export default function ProjectPage() {
                 </Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.usersWithoutCheckIns.map((user) => (
+                  {data.usersWithoutCheckIns.map((user, idx) => (
                     <HStack
-                      key={user.id}
+                      key={user.id ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -314,9 +314,9 @@ export default function ProjectPage() {
                 <Text color="gray.400">Brak sprzętu z naprawami</Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.equipmentWithLatestMaintenance.map((equipment) => (
+                  {data.equipmentWithLatestMaintenance.map((equipment, idx) => (
                     <HStack
-                      key={equipment.id}
+                      key={equipment.id ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -416,9 +416,9 @@ export default function ProjectPage() {
                       zł
                     </Text>
                   </Box>
-                  {data.usersWithExpensiveMemberships.map((item) => (
+                  {data.usersWithExpensiveMemberships.map((item, idx) => (
                     <HStack
-                      key={item.id}
+                      key={item.id ?? item.userId ?? item.membershipId ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -489,9 +489,9 @@ export default function ProjectPage() {
                 <Text color="gray.400">Brak pracowników w systemie</Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.staffUsers.map((user) => (
+                  {data.staffUsers.map((user, idx) => (
                     <HStack
-                      key={user.id}
+                      key={user.id ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -591,9 +591,9 @@ export default function ProjectPage() {
                 </Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.usersWithActiveMemberships.map((user) => (
+                  {data.usersWithActiveMemberships.map((user, idx) => (
                     <HStack
-                      key={user.id}
+                      key={user.id ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -636,9 +636,9 @@ export default function ProjectPage() {
                 <Text color="gray.400">Brak sprzętu dróższego niż karnety</Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.equipmentGreaterThanAny.map((equipment) => (
+                  {data.equipmentGreaterThanAny.map((equipment, idx) => (
                     <HStack
-                      key={equipment.id}
+                      key={equipment.id ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
@@ -701,9 +701,9 @@ export default function ProjectPage() {
                 </Text>
               ) : (
                 <VStack gap={3} align="stretch">
-                  {data.equipmentGreaterThanAll.map((equipment) => (
+                  {data.equipmentGreaterThanAll.map((equipment, idx) => (
                     <HStack
-                      key={equipment.id}
+                      key={equipment.id ?? idx}
                       p={4}
                       borderWidth="1px"
                       borderRadius="md"
