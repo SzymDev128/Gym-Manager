@@ -14,10 +14,9 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface TrainerRecord {
-  id: number; // employee id
+  employeeId: number; // employee id
   user: {
     id: number;
     firstName: string;
@@ -46,21 +45,10 @@ interface TrainerRecord {
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function TrainersPage() {
-  const { user } = useAuth();
   const { data, error, isLoading, mutate } = useSWR<TrainerRecord[]>(
-    "/api/employees?role=trainer",
+    "/api/employees",
     fetcher
   );
-  const { data: roleData } = useSWR<{ id: number; name: string }[]>(
-    "/api/roles?names=ADMIN,RECEPTIONIST,TRAINER",
-    fetcher
-  );
-
-  const canManage = useMemo(() => {
-    if (!user || !roleData) return false;
-    const allowed = new Set(roleData.map((r) => r.id));
-    return allowed.has(user.roleId);
-  }, [user, roleData]);
 
   const [editingSupervisorFor, setEditingSupervisorFor] = useState<
     number | null
@@ -115,10 +103,6 @@ export default function TrainersPage() {
         <Heading color="white" mb={2}>
           👥 Hierarchia trenerów
         </Heading>
-        <Text color="gray.400" mb={6}>
-          Zarządzaj relacją przełożony → podwładny (związek unarny w modelu
-          Trainer)
-        </Text>
         {isLoading ? (
           <Box textAlign="center" py={10}>
             <Spinner size="xl" />
@@ -186,22 +170,20 @@ export default function TrainersPage() {
                   >
                     Podwładni
                   </Table.ColumnHeader>
-                  {canManage && (
-                    <Table.ColumnHeader
-                      color="gray.200"
-                      py={4}
-                      borderColor="gray.600"
-                      textAlign="right"
-                    >
-                      Akcje
-                    </Table.ColumnHeader>
-                  )}
+                  <Table.ColumnHeader
+                    color="gray.200"
+                    py={4}
+                    borderColor="gray.600"
+                    textAlign="right"
+                  >
+                    Akcje
+                  </Table.ColumnHeader>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
                 {trainers.map((t, idx) => (
                   <Table.Row
-                    key={t.id}
+                    key={t.trainer?.trainerId}
                     bg={idx % 2 === 0 ? "gray.800" : "gray.700"}
                     _hover={{ bg: "gray.600" }}
                     transition="background 0.2s"
@@ -219,7 +201,7 @@ export default function TrainersPage() {
                       {t.trainer?.experienceYears} lat
                     </Table.Cell>
                     <Table.Cell color="gray.200" py={3} borderColor="gray.700">
-                      {editingSupervisorFor === t.id ? (
+                      {editingSupervisorFor === t.trainer?.trainerId ? (
                         <Flex gap={2} alignItems="center">
                           <select
                             value={newSupervisorId}
@@ -237,9 +219,16 @@ export default function TrainersPage() {
                           >
                             <option value="">Brak</option>
                             {trainers
-                              .filter((other) => other.id !== t.id)
+                              .filter(
+                                (other) =>
+                                  other.trainer?.trainerId !==
+                                  t.trainer?.trainerId
+                              )
                               .map((other) => (
-                                <option key={other.id} value={other.id}>
+                                <option
+                                  key={other.trainer?.trainerId}
+                                  value={other.trainer?.trainerId}
+                                >
                                   {other.user.firstName} {other.user.lastName}
                                 </option>
                               ))}
@@ -274,7 +263,7 @@ export default function TrainersPage() {
                       {t.trainer?.subordinates.length ? (
                         <Flex wrap="wrap" gap={2}>
                           {t.trainer.subordinates.map((s) => (
-                            <Badge key={s.id} colorPalette="cyan">
+                            <Badge key={s.trainerId} colorPalette="cyan">
                               {s.employee.user.firstName}{" "}
                               {s.employee.user.lastName}
                             </Badge>
@@ -286,65 +275,66 @@ export default function TrainersPage() {
                         </Text>
                       )}
                     </Table.Cell>
-                    {canManage && (
-                      <Table.Cell
-                        color="gray.200"
-                        py={3}
-                        borderColor="gray.700"
-                        textAlign="right"
+                    <Table.Cell
+                      color="gray.200"
+                      py={3}
+                      borderColor="gray.700"
+                      textAlign="right"
+                    >
+                      <Button
+                        size="xs"
+                        mr={2}
+                        onClick={() => {
+                          setEditingSupervisorFor(t.trainer?.trainerId ?? null);
+                          setNewSupervisorId(
+                            t.trainer?.supervisorId
+                              ? String(t.trainer.supervisorId)
+                              : ""
+                          );
+                        }}
                       >
+                        Zmień przełożonego
+                      </Button>
+                      {t.trainer?.supervisorId && (
                         <Button
                           size="xs"
-                          mr={2}
-                          onClick={() => {
-                            setEditingSupervisorFor(t.id);
-                            setNewSupervisorId(
-                              t.trainer?.supervisorId
-                                ? String(t.trainer.supervisorId)
-                                : ""
-                            );
+                          bg="orange.600"
+                          color="white"
+                          _hover={{ bg: "orange.500" }}
+                          onClick={async () => {
+                            try {
+                              await axios.patch(
+                                `/api/employees/${t.trainer?.trainerId}`,
+                                {
+                                  supervisorId: null,
+                                }
+                              );
+                              toaster.create({
+                                title: "Usunięto",
+                                description: "Przełożony został usunięty",
+                                type: "success",
+                                duration: 3000,
+                              });
+                              mutate();
+                            } catch (err: unknown) {
+                              const e = err as {
+                                response?: { data?: { error?: string } };
+                              };
+                              toaster.create({
+                                title: "Błąd",
+                                description:
+                                  e?.response?.data?.error ||
+                                  "Nie udało się usunąć",
+                                type: "error",
+                                duration: 5000,
+                              });
+                            }
                           }}
                         >
-                          Zmień przełożonego
+                          Usuń przełożonego
                         </Button>
-                        {t.trainer?.supervisorId && (
-                          <Button
-                            size="xs"
-                            bg="orange.600"
-                            color="white"
-                            _hover={{ bg: "orange.500" }}
-                            onClick={async () => {
-                              try {
-                                await axios.patch(`/api/employees/${t.id}`, {
-                                  supervisorId: null,
-                                });
-                                toaster.create({
-                                  title: "Usunięto",
-                                  description: "Przełożony został usunięty",
-                                  type: "success",
-                                  duration: 3000,
-                                });
-                                mutate();
-                              } catch (err: unknown) {
-                                const e = err as {
-                                  response?: { data?: { error?: string } };
-                                };
-                                toaster.create({
-                                  title: "Błąd",
-                                  description:
-                                    e?.response?.data?.error ||
-                                    "Nie udało się usunąć",
-                                  type: "error",
-                                  duration: 5000,
-                                });
-                              }
-                            }}
-                          >
-                            Usuń przełożonego
-                          </Button>
-                        )}
-                      </Table.Cell>
-                    )}
+                      )}
+                    </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>

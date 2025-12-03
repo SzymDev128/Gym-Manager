@@ -18,7 +18,7 @@ import ClassEditModal from "@/components/ClassEditModal";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ClassItem {
-  id: number;
+  classId: number;
   name: string;
   startTime: string;
   durationMin: number;
@@ -66,12 +66,6 @@ export default function ClassesPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<ClassItem | null>(null);
 
-  // Allowed roles fetch (ADMIN, RECEPTIONIST, TRAINER) to avoid hardcoding IDs
-  const { data: allowedRoles } = useSWR<{ id: number; name: string }[]>(
-    "/api/roles?names=ADMIN,RECEPTIONIST,TRAINER",
-    fetcher
-  );
-
   const trainerOptions: TrainerOption[] = useMemo(() => {
     if (!trainersData || !Array.isArray(trainersData)) return [];
     return trainersData
@@ -81,18 +75,6 @@ export default function ClassesPage() {
         label: `${e.user.firstName} ${e.user.lastName}`,
       }));
   }, [trainersData]);
-
-  const trainerLabelById = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const t of trainerOptions) map.set(t.id, t.label);
-    return map;
-  }, [trainerOptions]);
-
-  const canManage = useMemo(() => {
-    if (!user || !allowedRoles || !Array.isArray(allowedRoles)) return false;
-    const set = new Set(allowedRoles.map((r) => r.id));
-    return set.has(user.roleId);
-  }, [user, allowedRoles]);
 
   return (
     <Box minH="100vh" bg="gray.900">
@@ -115,18 +97,17 @@ export default function ClassesPage() {
               ? "Ładowanie..."
               : `Znaleziono: ${classes?.length ?? 0}`}
           </Text>
-          {canManage && (
-            <Button
-              size="sm"
-              bg="green.600"
-              color="white"
-              _hover={{ bg: "green.400" }}
-              onClick={() => setIsCreateOpen(true)}
-              disabled={trainersLoading}
-            >
-              + Dodaj zajęcia
-            </Button>
-          )}
+
+          <Button
+            size="sm"
+            bg="green.600"
+            color="white"
+            _hover={{ bg: "green.400" }}
+            onClick={() => setIsCreateOpen(true)}
+            disabled={trainersLoading}
+          >
+            + Dodaj zajęcia
+          </Button>
         </Box>
 
         {classesLoading ? (
@@ -198,31 +179,22 @@ export default function ClassesPage() {
                     color="gray.200"
                     py={4}
                     borderColor="gray.500"
+                    textAlign="right"
                   >
-                    Trener
+                    Akcje
                   </Table.ColumnHeader>
-                  {canManage && (
-                    <Table.ColumnHeader
-                      color="gray.200"
-                      py={4}
-                      borderColor="gray.500"
-                      textAlign="right"
-                    >
-                      Akcje
-                    </Table.ColumnHeader>
-                  )}
                 </Table.Row>
               </Table.Header>
               <Table.Body>
                 {classes.map((c, idx) => (
                   <Table.Row
-                    key={c.id}
+                    key={c.classId}
                     bg={idx % 2 === 0 ? "gray.800" : "gray.700"}
                     _hover={{ bg: "gray.600" }}
                     transition="background 0.2s"
                   >
                     <Table.Cell color="gray.200" py={3} borderColor="gray.700">
-                      {c.id}
+                      {c.classId}
                     </Table.Cell>
                     <Table.Cell color="gray.200" py={3} borderColor="gray.700">
                       {c.name}
@@ -233,71 +205,59 @@ export default function ClassesPage() {
                     <Table.Cell color="gray.200" py={3} borderColor="gray.700">
                       {c.durationMin} min
                     </Table.Cell>
-                    <Table.Cell color="gray.200" py={3} borderColor="gray.700">
-                      {c.trainerId ? (
-                        <Badge colorPalette="purple">
-                          {trainerLabelById.get(c.trainerId) ||
-                            `Trener #${c.trainerId}`}
-                        </Badge>
-                      ) : (
-                        <Badge colorPalette="gray">Brak</Badge>
-                      )}
-                    </Table.Cell>
-                    {canManage && (
-                      <Table.Cell
-                        color="gray.200"
-                        py={3}
-                        borderColor="gray.700"
-                        textAlign="right"
+                    <Table.Cell
+                      color="gray.200"
+                      py={3}
+                      borderColor="gray.700"
+                      textAlign="right"
+                    >
+                      <Button
+                        size="xs"
+                        mr={2}
+                        onClick={() => {
+                          setEditing(c);
+                          setEditOpen(true);
+                        }}
                       >
-                        <Button
-                          size="xs"
-                          mr={2}
-                          onClick={() => {
-                            setEditing(c);
-                            setEditOpen(true);
-                          }}
-                        >
-                          Edytuj
-                        </Button>
-                        <Button
-                          size="xs"
-                          bg="red.600"
-                          color="white"
-                          _hover={{ bg: "red.500" }}
-                          onClick={async () => {
-                            const ok = window.confirm(
-                              `Czy na pewno chcesz usunąć zajęcia "${c.name}"?`
-                            );
-                            if (!ok) return;
-                            try {
-                              await axios.delete(`/api/classes/${c.id}`);
-                              toaster.create({
-                                title: "Usunięto",
-                                description: `Zajęcia "${c.name}" zostały usunięte`,
-                                type: "success",
-                                duration: 3000,
-                              });
-                              mutate();
-                            } catch (error) {
-                              const err = error as {
-                                response?: { data?: { error?: string } };
-                              };
-                              toaster.create({
-                                title: "Błąd",
-                                description:
-                                  err?.response?.data?.error ||
-                                  "Nie udało się usunąć zajęć",
-                                type: "error",
-                                duration: 5000,
-                              });
-                            }
-                          }}
-                        >
-                          Usuń
-                        </Button>
-                      </Table.Cell>
-                    )}
+                        Edytuj
+                      </Button>
+                      <Button
+                        size="xs"
+                        bg="red.600"
+                        color="white"
+                        _hover={{ bg: "red.500" }}
+                        onClick={async () => {
+                          const ok = window.confirm(
+                            `Czy na pewno chcesz usunąć zajęcia "${c.name}"?`
+                          );
+                          if (!ok) return;
+                          try {
+                            await axios.delete(`/api/classes/${c.classId}`);
+                            toaster.create({
+                              title: "Usunięto",
+                              description: `Zajęcia "${c.name}" zostały usunięte`,
+                              type: "success",
+                              duration: 3000,
+                            });
+                            mutate();
+                          } catch (error) {
+                            const err = error as {
+                              response?: { data?: { error?: string } };
+                            };
+                            toaster.create({
+                              title: "Błąd",
+                              description:
+                                err?.response?.data?.error ||
+                                "Nie udało się usunąć zajęć",
+                              type: "error",
+                              duration: 5000,
+                            });
+                          }
+                        }}
+                      >
+                        Usuń
+                      </Button>
+                    </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
@@ -345,7 +305,7 @@ export default function ClassesPage() {
             }}
             trainers={trainerOptions}
             initial={{
-              id: editing.id,
+              id: editing.classId,
               name: editing.name,
               startTime: editing.startTime,
               durationMin: editing.durationMin,
@@ -354,7 +314,7 @@ export default function ClassesPage() {
             onSave={async (payload) => {
               try {
                 const res = await axios.patch(
-                  `/api/classes/${editing.id}`,
+                  `/api/classes/${editing.classId}`,
                   payload
                 );
                 toaster.create({
