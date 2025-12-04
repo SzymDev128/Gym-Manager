@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import ReportButton from "../dashboard/ReportButton";
 
 interface StatisticsData {
   usersByRole: Array<{
@@ -166,6 +167,7 @@ export default function ProjectPage() {
           <Heading size="xl" color="white">
             Statystyki i Raporty
           </Heading>
+          <ReportButton></ReportButton>
 
           {/* Users by Role - GROUP BY */}
           <Card.Root bg="gray.800" borderColor="gray.700">
