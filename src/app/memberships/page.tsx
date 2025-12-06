@@ -140,7 +140,10 @@ export default function MembershipsPage() {
           {memberships && (
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
               {memberships.map((membership) => (
-                <MembershipCard key={membership.id} membership={membership} />
+                <MembershipCard
+                  key={membership.membershipId}
+                  membership={membership}
+                />
               ))}
             </SimpleGrid>
           )}

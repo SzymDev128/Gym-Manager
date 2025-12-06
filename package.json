@@ -12,12 +12,16 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.28.0",
+    "@chakra-ui/modal": "^2.3.1",
+    "@chakra-ui/react": "^3.30.0",
+    "@chakra-ui/system": "^2.6.2",
     "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@prisma/client": "^6.17.1",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "framer-motion": "^12.23.25",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "next": "15.5.6",
